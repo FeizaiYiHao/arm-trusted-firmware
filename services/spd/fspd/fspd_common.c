@@ -22,42 +22,42 @@
  * initialize fsp context and entry point info for the secure payload
  ******************************************************************************/
 void fspd_init_fsp_ep_state(struct entry_point_info *fsp_entry_point,
-				uint32_t rw,
-				uint64_t pc,
-				fsp_context_t *fsp_ctx)
+                uint32_t rw,
+                uint64_t pc,
+                fsp_context_t *fsp_ctx)
 {
-	uint32_t ep_attr;
+    uint32_t ep_attr;
 
-	/* Passing a NULL context is a critical programming error */
-	assert(fsp_ctx);
-	assert(fsp_entry_point);
-	assert(pc);
+    /* Passing a NULL context is a critical programming error */
+    assert(fsp_ctx);
+    assert(fsp_entry_point);
+    assert(pc);
 
-	/*
-	 * We support AArch64 FSP for now.
-	 * TODO: Add support for AArch32 FSP
-	 */
-	assert(rw == FSP_AARCH64);
+    /*
+     * We support AArch64 FSP for now.
+     * TODO: Add support for AArch32 FSP
+     */
+    assert(rw == FSP_AARCH64);
 
-	/* Associate this context with the cpu specified */
-	fsp_ctx->mpidr = read_mpidr_el1();
-	fsp_ctx->state = 0;
-	set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_OFF);
-	clr_yield_smc_active_flag(fsp_ctx->state);
+    /* Associate this context with the cpu specified */
+    fsp_ctx->mpidr = read_mpidr_el1();
+    fsp_ctx->state = 0;
+    set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_OFF);
+    clr_yield_smc_active_flag(fsp_ctx->state);
 
-	cm_set_context(&fsp_ctx->cpu_ctx, SECURE);
+    cm_set_context(&fsp_ctx->cpu_ctx, SECURE);
 
-	/* initialise an entrypoint to set up the CPU context */
-	ep_attr = SECURE | EP_ST_ENABLE;
-	if (read_sctlr_el3() & SCTLR_EE_BIT)
-		ep_attr |= EP_EE_BIG;
-	SET_PARAM_HEAD(fsp_entry_point, PARAM_EP, VERSION_1, ep_attr);
+    /* initialise an entrypoint to set up the CPU context */
+    ep_attr = SECURE | EP_ST_ENABLE;
+    if (read_sctlr_el3() & SCTLR_EE_BIT)
+        ep_attr |= EP_EE_BIG;
+    SET_PARAM_HEAD(fsp_entry_point, PARAM_EP, VERSION_1, ep_attr);
 
-	fsp_entry_point->pc = pc;
-	fsp_entry_point->spsr = SPSR_64(MODE_EL1,
-					MODE_SP_ELX,
-					DISABLE_ALL_EXCEPTIONS);
-	zeromem(&fsp_entry_point->args, sizeof(fsp_entry_point->args));
+    fsp_entry_point->pc = pc;
+    fsp_entry_point->spsr = SPSR_64(MODE_EL1,
+                    MODE_SP_ELX,
+                    DISABLE_ALL_EXCEPTIONS);
+    zeromem(&fsp_entry_point->args, sizeof(fsp_entry_point->args));
 }
 
 /*******************************************************************************
@@ -70,22 +70,24 @@ void fspd_init_fsp_ep_state(struct entry_point_info *fsp_entry_point,
  ******************************************************************************/
 uint64_t fspd_synchronous_sp_entry(fsp_context_t *fsp_ctx)
 {
-	uint64_t rc;
+    uint64_t rc;
 
-	assert(fsp_ctx != NULL);
-	assert(fsp_ctx->c_rt_ctx == 0);
+    assert(fsp_ctx != NULL);
+    assert(fsp_ctx->c_rt_ctx == 0);
 
-	/* Apply the Secure EL1 system register context and switch to it */
-	assert(cm_get_context(SECURE) == &fsp_ctx->cpu_ctx);
-	cm_el1_sysregs_context_restore(SECURE);
-	cm_set_next_eret_context(SECURE);
+    /* Apply the Secure EL1 system register context and switch to it */
+    assert(cm_get_context(SECURE) == &fsp_ctx->cpu_ctx);
+    cm_el1_sysregs_context_restore(SECURE);
+    cm_set_next_eret_context(SECURE);
 
-	rc = fspd_enter_sp(&fsp_ctx->c_rt_ctx);
+    VERBOSE("Calling fspd_enter_sp\n");
+    rc = fspd_enter_sp(&fsp_ctx->c_rt_ctx);
+    VERBOSE("Done with fspd_enter_sp\n");
 #if ENABLE_ASSERTIONS
-	fsp_ctx->c_rt_ctx = 0;
+    fsp_ctx->c_rt_ctx = 0;
 #endif
 
-	return rc;
+    return rc;
 }
 
 
@@ -99,16 +101,16 @@ uint64_t fspd_synchronous_sp_entry(fsp_context_t *fsp_ctx)
  ******************************************************************************/
 void fspd_synchronous_sp_exit(fsp_context_t *fsp_ctx, uint64_t ret)
 {
-	assert(fsp_ctx != NULL);
-	/* Save the Secure EL1 system register context */
-	assert(cm_get_context(SECURE) == &fsp_ctx->cpu_ctx);
-	cm_el1_sysregs_context_save(SECURE);
+    assert(fsp_ctx != NULL);
+    /* Save the Secure EL1 system register context */
+    assert(cm_get_context(SECURE) == &fsp_ctx->cpu_ctx);
+    cm_el1_sysregs_context_save(SECURE);
 
-	assert(fsp_ctx->c_rt_ctx != 0);
-	fspd_exit_sp(fsp_ctx->c_rt_ctx, ret);
+    assert(fsp_ctx->c_rt_ctx != 0);
+    fspd_exit_sp(fsp_ctx->c_rt_ctx, ret);
 
-	/* Should never reach here */
-	assert(0);
+    /* Should never reach here */
+    assert(0);
 }
 
 /*******************************************************************************
@@ -118,23 +120,23 @@ void fspd_synchronous_sp_exit(fsp_context_t *fsp_ctx, uint64_t ret)
  ******************************************************************************/
 int fspd_abort_preempted_smc(fsp_context_t *fsp_ctx)
 {
-	if (!get_yield_smc_active_flag(fsp_ctx->state))
-		return 0;
+    if (!get_yield_smc_active_flag(fsp_ctx->state))
+        return 0;
 
-	/* Abort any preempted SMC request */
-	clr_yield_smc_active_flag(fsp_ctx->state);
+    /* Abort any preempted SMC request */
+    clr_yield_smc_active_flag(fsp_ctx->state);
 
-	/*
-	 * Arrange for an entry into the test secure payload. It will
-	 * be returned via FSP_ABORT_DONE case in fspd_smc_handler.
-	 */
-	cm_set_elr_el3(SECURE,
-		       (uint64_t) &fsp_vectors->abort_yield_smc_entry);
-	uint64_t rc = fspd_synchronous_sp_entry(fsp_ctx);
+    /*
+     * Arrange for an entry into the test secure payload. It will
+     * be returned via FSP_ABORT_DONE case in fspd_smc_handler.
+     */
+    cm_set_elr_el3(SECURE,
+               (uint64_t) &fsp_vectors->abort_yield_smc_entry);
+    uint64_t rc = fspd_synchronous_sp_entry(fsp_ctx);
 
-	if (rc != 0)
-		panic();
+    if (rc != 0)
+        panic();
 
-	return 1;
+    return 1;
 }
 

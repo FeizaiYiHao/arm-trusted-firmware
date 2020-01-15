@@ -29,37 +29,37 @@ static void fspd_cpu_on_handler(u_register_t target_cpu)
  ******************************************************************************/
 static int32_t fspd_cpu_off_handler(u_register_t unused)
 {
-	int32_t rc = 0;
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    int32_t rc = 0;
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
 
-	/*
-	 * Abort any preempted SMC request before overwriting the SECURE
-	 * context.
-	 */
-	fspd_abort_preempted_smc(fsp_ctx);
+    /*
+     * Abort any preempted SMC request before overwriting the SECURE
+     * context.
+     */
+    fspd_abort_preempted_smc(fsp_ctx);
 
-	/* Program the entry point and enter the FSP */
-	cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_off_entry);
-	rc = fspd_synchronous_sp_entry(fsp_ctx);
+    /* Program the entry point and enter the FSP */
+    cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_off_entry);
+    rc = fspd_synchronous_sp_entry(fsp_ctx);
 
-	/*
-	 * Read the response from the FSP. A non-zero return means that
-	 * something went wrong while communicating with the FSP.
-	 */
-	if (rc != 0)
-		panic();
+    /*
+     * Read the response from the FSP. A non-zero return means that
+     * something went wrong while communicating with the FSP.
+     */
+    if (rc != 0)
+        panic();
 
-	/*
-	 * Reset FSP's context for a fresh start when this cpu is turned on
-	 * subsequently.
-	 */
-	set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_OFF);
+    /*
+     * Reset FSP's context for a fresh start when this cpu is turned on
+     * subsequently.
+     */
+    set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_OFF);
 
-	return 0;
+    return 0;
 }
 
 /*******************************************************************************
@@ -68,32 +68,32 @@ static int32_t fspd_cpu_off_handler(u_register_t unused)
  ******************************************************************************/
 static void fspd_cpu_suspend_handler(u_register_t max_off_pwrlvl)
 {
-	int32_t rc = 0;
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    int32_t rc = 0;
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
 
-	/*
-	 * Abort any preempted SMC request before overwriting the SECURE
-	 * context.
-	 */
-	fspd_abort_preempted_smc(fsp_ctx);
+    /*
+     * Abort any preempted SMC request before overwriting the SECURE
+     * context.
+     */
+    fspd_abort_preempted_smc(fsp_ctx);
 
-	/* Program the entry point and enter the FSP */
-	cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_suspend_entry);
-	rc = fspd_synchronous_sp_entry(fsp_ctx);
+    /* Program the entry point and enter the FSP */
+    cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_suspend_entry);
+    rc = fspd_synchronous_sp_entry(fsp_ctx);
 
-	/*
-	 * Read the response from the FSP. A non-zero return means that
-	 * something went wrong while communicating with the FSP.
-	 */
-	if (rc)
-		panic();
+    /*
+     * Read the response from the FSP. A non-zero return means that
+     * something went wrong while communicating with the FSP.
+     */
+    if (rc)
+        panic();
 
-	/* Update its context to reflect the state the FSP is in */
-	set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_SUSPEND);
+    /* Update its context to reflect the state the FSP is in */
+    set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_SUSPEND);
 }
 
 /*******************************************************************************
@@ -104,42 +104,42 @@ static void fspd_cpu_suspend_handler(u_register_t max_off_pwrlvl)
  ******************************************************************************/
 static void fspd_cpu_on_finish_handler(u_register_t unused)
 {
-	int32_t rc = 0;
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
-	entry_point_info_t fsp_on_entrypoint;
+    int32_t rc = 0;
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    entry_point_info_t fsp_on_entrypoint;
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_OFF);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_OFF);
 
-	fspd_init_fsp_ep_state(&fsp_on_entrypoint,
-				FSP_AARCH64,
-				(uint64_t) &fsp_vectors->cpu_on_entry,
-				fsp_ctx);
+    fspd_init_fsp_ep_state(&fsp_on_entrypoint,
+                FSP_AARCH64,
+                (uint64_t) &fsp_vectors->cpu_on_entry,
+                fsp_ctx);
 
-	/* Initialise this cpu's secure context */
-	cm_init_my_context(&fsp_on_entrypoint);
+    /* Initialise this cpu's secure context */
+    cm_init_my_context(&fsp_on_entrypoint);
 
 #if FSP_NS_INTR_ASYNC_PREEMPT
-	/*
-	 * Disable the NS interrupt locally since it will be enabled globally
-	 * within cm_init_my_context.
-	 */
-	disable_intr_rm_local(INTR_TYPE_NS, SECURE);
+    /*
+     * Disable the NS interrupt locally since it will be enabled globally
+     * within cm_init_my_context.
+     */
+    disable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
 
-	/* Enter the FSP */
-	rc = fspd_synchronous_sp_entry(fsp_ctx);
+    /* Enter the FSP */
+    rc = fspd_synchronous_sp_entry(fsp_ctx);
 
-	/*
-	 * Read the response from the FSP. A non-zero return means that
-	 * something went wrong while communicating with the SP.
-	 */
-	if (rc != 0)
-		panic();
+    /*
+     * Read the response from the FSP. A non-zero return means that
+     * something went wrong while communicating with the SP.
+     */
+    if (rc != 0)
+        panic();
 
-	/* Update its context to reflect the state the SP is in */
-	set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_ON);
+    /* Update its context to reflect the state the SP is in */
+    set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_ON);
 }
 
 /*******************************************************************************
@@ -149,29 +149,29 @@ static void fspd_cpu_on_finish_handler(u_register_t unused)
  ******************************************************************************/
 static void fspd_cpu_suspend_finish_handler(u_register_t max_off_pwrlvl)
 {
-	int32_t rc = 0;
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    int32_t rc = 0;
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_SUSPEND);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_SUSPEND);
 
-	/* Program the entry point, max_off_pwrlvl and enter the SP */
-	write_ctx_reg(get_gpregs_ctx(&fsp_ctx->cpu_ctx),
-		      CTX_GPREG_X0,
-		      max_off_pwrlvl);
-	cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_resume_entry);
-	rc = fspd_synchronous_sp_entry(fsp_ctx);
+    /* Program the entry point, max_off_pwrlvl and enter the SP */
+    write_ctx_reg(get_gpregs_ctx(&fsp_ctx->cpu_ctx),
+              CTX_GPREG_X0,
+              max_off_pwrlvl);
+    cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->cpu_resume_entry);
+    rc = fspd_synchronous_sp_entry(fsp_ctx);
 
-	/*
-	 * Read the response from the FSP. A non-zero return means that
-	 * something went wrong while communicating with the FSP.
-	 */
-	if (rc != 0)
-		panic();
+    /*
+     * Read the response from the FSP. A non-zero return means that
+     * something went wrong while communicating with the FSP.
+     */
+    if (rc != 0)
+        panic();
 
-	/* Update its context to reflect the state the SP is in */
-	set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_ON);
+    /* Update its context to reflect the state the SP is in */
+    set_fsp_pstate(fsp_ctx->state, FSP_PSTATE_ON);
 }
 
 /*******************************************************************************
@@ -180,7 +180,7 @@ static void fspd_cpu_suspend_finish_handler(u_register_t max_off_pwrlvl)
  ******************************************************************************/
 static int32_t fspd_cpu_migrate_info(u_register_t *resident_cpu)
 {
-	return FSP_MIGRATE_INFO;
+    return FSP_MIGRATE_INFO;
 }
 
 /*******************************************************************************
@@ -189,24 +189,24 @@ static int32_t fspd_cpu_migrate_info(u_register_t *resident_cpu)
  ******************************************************************************/
 static void fspd_system_off(void)
 {
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
 
-	/*
-	 * Abort any preempted SMC request before overwriting the SECURE
-	 * context.
-	 */
-	fspd_abort_preempted_smc(fsp_ctx);
+    /*
+     * Abort any preempted SMC request before overwriting the SECURE
+     * context.
+     */
+    fspd_abort_preempted_smc(fsp_ctx);
 
-	/* Program the entry point */
-	cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->system_off_entry);
+    /* Program the entry point */
+    cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->system_off_entry);
 
-	/* Enter the FSP. We do not care about the return value because we
-	 * must continue the shutdown anyway */
-	fspd_synchronous_sp_entry(fsp_ctx);
+    /* Enter the FSP. We do not care about the return value because we
+     * must continue the shutdown anyway */
+    fspd_synchronous_sp_entry(fsp_ctx);
 }
 
 /*******************************************************************************
@@ -215,26 +215,26 @@ static void fspd_system_off(void)
  ******************************************************************************/
 static void fspd_system_reset(void)
 {
-	uint32_t linear_id = plat_my_core_pos();
-	fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
+    uint32_t linear_id = plat_my_core_pos();
+    fsp_context_t *fsp_ctx = &fspd_sp_context[linear_id];
 
-	assert(fsp_vectors);
-	assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
+    assert(fsp_vectors);
+    assert(get_fsp_pstate(fsp_ctx->state) == FSP_PSTATE_ON);
 
-	/*
-	 * Abort any preempted SMC request before overwriting the SECURE
-	 * context.
-	 */
-	fspd_abort_preempted_smc(fsp_ctx);
+    /*
+     * Abort any preempted SMC request before overwriting the SECURE
+     * context.
+     */
+    fspd_abort_preempted_smc(fsp_ctx);
 
-	/* Program the entry point */
-	cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->system_reset_entry);
+    /* Program the entry point */
+    cm_set_elr_el3(SECURE, (uint64_t) &fsp_vectors->system_reset_entry);
 
-	/*
-	 * Enter the FSP. We do not care about the return value because we
-	 * must continue the reset anyway
-	 */
-	fspd_synchronous_sp_entry(fsp_ctx);
+    /*
+     * Enter the FSP. We do not care about the return value because we
+     * must continue the reset anyway
+     */
+    fspd_synchronous_sp_entry(fsp_ctx);
 }
 
 /*******************************************************************************
@@ -242,13 +242,13 @@ static void fspd_system_reset(void)
  * FSP bookkeeping before PSCI executes a power mgmt.  operation.
  ******************************************************************************/
 const spd_pm_ops_t fspd_pm = {
-	.svc_on = fspd_cpu_on_handler,
-	.svc_off = fspd_cpu_off_handler,
-	.svc_suspend = fspd_cpu_suspend_handler,
-	.svc_on_finish = fspd_cpu_on_finish_handler,
-	.svc_suspend_finish = fspd_cpu_suspend_finish_handler,
-	.svc_migrate = NULL,
-	.svc_migrate_info = fspd_cpu_migrate_info,
-	.svc_system_off = fspd_system_off,
-	.svc_system_reset = fspd_system_reset
+    .svc_on = fspd_cpu_on_handler,
+    .svc_off = fspd_cpu_off_handler,
+    .svc_suspend = fspd_cpu_suspend_handler,
+    .svc_on_finish = fspd_cpu_on_finish_handler,
+    .svc_suspend_finish = fspd_cpu_suspend_finish_handler,
+    .svc_migrate = NULL,
+    .svc_migrate_info = fspd_cpu_migrate_info,
+    .svc_system_off = fspd_system_off,
+    .svc_system_reset = fspd_system_reset
 };
