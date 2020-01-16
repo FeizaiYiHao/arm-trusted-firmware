@@ -1,7 +1,8 @@
 # Preliminary 
-FSP only targets AArch64 on QEMU. It is a stripped-down version of TSP and binds Rust code. The TSP
-part is not cleanly separated yet and it is not self-contained either. It needs to be compiled
-together with TF-A. The Rust code so far simply calls a C function that prints out a log message.
+FSP only targets QEMU virt Armv8-A (AArch64). It is a stripped-down version of TSP and binds Rust
+code. The TSP part is not cleanly separated yet and it is not self-contained either. It needs to be
+compiled together with TF-A. The Rust code so far simply calls a C function that prints out a log
+message.
 
 The following is the call sequence.
 
@@ -12,7 +13,7 @@ The following is the call sequence.
 
 The build command is:
 
-```
+```shell
 $ make PLAT=qemu MBEDTLS_DIR=/home/stevko/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=70 BL33=/home/stevko/dev/bin/bl33.bin SPD=fspd all certificates
 ```
 
@@ -44,26 +45,33 @@ $ sudo apt install make build-essential bison flex libssl-dev qemu
 
 We need to download ARM GNU toolchain in order to cross-compile our source. What we need is an
 ability to compile our source to the ARM ELF bare-metal target. The [target
-triplet](https://wiki.osdev.org/Target_Triplet) for this is aarch64-none-elf. If you go to
-`https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads`,
+triplet](https://wiki.osdev.org/Target_Triplet) for this is aarch64-none-elf. If you go to [ARM's
+toolchain
+website](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads),
 it will list many targets. Among them, we need to use AArch64 ELF bare-metal target
 (aarch64-none-elf). Browse down to the section and download
-`gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz`. After that, unzip the file.
+`gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz` (or whatever the current one is). After that,
+unzip the file.
 
 ```
 $ tar -xf gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz
 ```
 
 The above command will create `gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf` directory. For
-convenience, add the following to your shell's startup file, e.g., `~/.profile` or `~/.bashrc`if
+convenience, add the following to your shell's startup file, e.g., `~/.profile` or `~/.bashrc` if
 you use bash.
 
-```
+```shell
 export CROSS_COMPILE=aarch64-none-elf-
+
 if [[ ! "$PATH" == */gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf/bin* ]]; then                                                   
   export PATH=$PATH:$HOME/dev/gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf/bin
 fi
 ```
+
+Note that exporting `$CROSS_COMPILE` means that you are always cross-compiling. If you don't want
+to do this, then you need to provide `CROSS_COMPILE=aarch64-none-elf-` to `make` every time you
+compile.
 
 The source the startup file to make it take effect (assuming you added it to `~/.profile`).
 
@@ -81,10 +89,11 @@ $ git clone https://github.com/ARMmbed/mbedtls.git -b mbedtls-2.16.2 --depth=1
 
 It will create `mbedtls` directory.
 
-## Getting a normal boot loader
+## Getting a Normal Boot Loader
 
-TF-A requires a normal boot loader at compile time. We will use U-Boot for now. To get it, do the
-following.
+TF-A requires a normal boot loader at compile time. We will use U-Boot for now. We could use
+[QEMU_EFI.fd](http://snapshots.linaro.org/components/kernel/leg-virt-tianocore-edk2-upstream/latest/QEMU-KERNEL-AARCH64/RELEASE_GCC5/)
+instead, and we might in the future. To get U-Boot, do the following.
 
 ```
 $ git clone https://github.com/ARM-software/u-boot.git
@@ -134,7 +143,7 @@ Rust code. More on this later.
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
 
-Get our own version of TF-A, which includes FSP.
+Get our own version of TF-A (this repo), which includes FSP.
 
 ```
 $ git clone https://github.com/steveyko/arm-trusted-firmware.git
@@ -142,8 +151,8 @@ $ git clone https://github.com/steveyko/arm-trusted-firmware.git
 
 ## Creating File Links for QEMU
 
-In order to run TF-A on QEMU, it is easier to put all necessary files under a single directory. For
-this, we can create a directory with file links.
+In order to run TF-A on QEMU, it is easier to put all necessary files under a single directory and
+run from there. For this, we can create a directory with file links.
 
 ```
 $ mkdir bin
@@ -179,11 +188,11 @@ $ qemu-system-aarch64 -nographic -smp 1 -s -machine virt,secure=on -cpu cortex-a
 ```
 
 It will hang, but if it shows the following messages close to the end, it means the build was
-successful.
+successful. These log messages are printed out by FSP (and FSP Dispatcher).
 
-`
+```
 VERBOSE: Calling fspd_enter_sp
 VERBOSE: fsp_c_main
 NOTICE:  BL32: Debug message
 VERBOSE: Done with fspd_enter_sp
-`
+```
