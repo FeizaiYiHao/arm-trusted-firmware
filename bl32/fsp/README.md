@@ -13,7 +13,7 @@ The following is the call sequence.
 
 The build command is:
 
-```shell
+```
 $ make PLAT=qemu MBEDTLS_DIR=/home/stevko/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=70 BL33=/home/stevko/dev/bin/bl33.bin SPD=fspd all certificates
 ```
 
@@ -29,8 +29,9 @@ The instructions here assume Ubuntu 18.04.3 LTS (Bionic Beaver). The ultimate go
 [ARM Trusted Firmware-A (TF-A)](https://developer.trustedfirmware.org/dashboard/view/6/) with our
 FSP.
 
-**It also assumes that everything is done under a directory `~/dev`.** So either you can create
-that directory and work from there, or change it appropriately as you follow the instructions.
+**The instructions here also assume that everything is done under a directory `~/dev`.** So you can
+either create that directory and work from there, or change it appropriately as you follow the
+instructions.
 
 ## Getting Necessary Packages
 
@@ -44,12 +45,12 @@ $ sudo apt install make build-essential bison flex libssl-dev qemu
 ## Getting the ARM GNU Toolchain
 
 We need to download ARM GNU toolchain in order to cross-compile our source. What we need is an
-ability to compile our source to the ARM ELF bare-metal target. The [target
-triplet](https://wiki.osdev.org/Target_Triplet) for this is aarch64-none-elf. If you go to [ARM's
+ability to compile our source so it can run on bare-metal ARM hardware. The [target
+triplet](https://wiki.osdev.org/Target_Triplet) for this is `aarch64-none-elf`. If you go to [ARM's
 toolchain
 website](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads),
-it will list many targets. Among them, we need to use AArch64 ELF bare-metal target
-(aarch64-none-elf). Browse down to the section and download
+it will list many targets. Among them, we need to use AArch64 ELF bare-metal target (which is
+`aarch64-none-elf`). Browse down to the section and download
 `gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz` (or whatever the current one is). After that,
 unzip the file.
 
@@ -92,11 +93,11 @@ It will create `mbedtls` directory.
 ## Getting a Normal Boot Loader
 
 TF-A requires a normal boot loader at compile time. We will use U-Boot for now. We could use
-[QEMU_EFI.fd](http://snapshots.linaro.org/components/kernel/leg-virt-tianocore-edk2-upstream/latest/QEMU-KERNEL-AARCH64/RELEASE_GCC5/)
+[`QEMU_EFI.fd`](http://snapshots.linaro.org/components/kernel/leg-virt-tianocore-edk2-upstream/latest/QEMU-KERNEL-AARCH64/RELEASE_GCC5/)
 instead, and we might in the future. To get U-Boot, do the following.
 
 ```
-$ git clone https://github.com/ARM-software/u-boot.git
+$ git clone https://github.com/ARM-software/u-boot.git --depth=1
 ```
 
 Then we need to compile it.
@@ -137,9 +138,9 @@ $ rustup target add aarch64-unknown-linux-gnu
 $ rustup component add llvm-tools-preview
 ```
 
-Notice that the target is not aarch64-none-elf. For Rust, aarch64-unknown-linux-gnu is good enough
-although it does not target bare metal hardware. This is because we will use `![no_std]` for our
-Rust code. More on this later.
+Notice that the target is not `aarch64-none-elf`. For Rust, `aarch64-unknown-linux-gnu` is good
+enough although it does not target bare metal hardware. This is because we will use `![no_std]` for
+our Rust code. More on this later.
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
 
@@ -187,7 +188,7 @@ $ cd ../bin
 $ qemu-system-aarch64 -nographic -smp 1 -s -machine virt,secure=on -cpu cortex-a57 -d unimp -semihosting-config enable,target=native -m 1057 -bios bl1.bin
 ```
 
-It will hang, but if it shows the following messages close to the end, it means the build was
+It will hang, but if it shows the following messages roughly at the end, it means the build was
 successful. These log messages are printed out by FSP (and FSP Dispatcher).
 
 ```
