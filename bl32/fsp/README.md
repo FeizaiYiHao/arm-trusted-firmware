@@ -1,8 +1,11 @@
 # Preliminary 
 FSP only targets QEMU virt Armv8-A (AArch64). It is a stripped-down version of TSP and binds Rust
 code. The TSP part is not cleanly separated yet and it is not self-contained either. It needs to be
-compiled together with TF-A. The Rust code so far simply calls a C function that prints out a log
-message.
+compiled together with ARM Trusted Firmware-A (TF-A). The Rust code so far simply calls a C
+function that prints out a log message. This is just to demonstrate that we can boot our own
+[Secure-EL1
+Payload (SP)](https://trustedfirmware-a.readthedocs.io/en/latest/getting_started/image-terminology.html#secure-el1-payload-sp-ap-bl32)
+written in Rust.
 
 The following is the call sequence.
 
