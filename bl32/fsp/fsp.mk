@@ -2,13 +2,13 @@
 # Modeled after bl32/tsp/tsp.mk
 #
 
-BL32_SOURCES		+=	bl32/fsp/fsp_c_main.c				\
-						bl32/fsp/fsp_qemu_console_init.c	\
-						bl32/fsp/asm/fsp_plat_helpers.S		\
-						bl32/fsp/asm/fsp_entrypoint.S		\
-						bl32/fsp/asm/fsp_exceptions.S
+BL32_SOURCES		+=	bl32/fsp/init/fsp_c_main.c				\
+						bl32/fsp/init/fsp_qemu_console_init.c	\
+						bl32/fsp/init/fsp_plat_helpers.S		\
+						bl32/fsp/init/fsp_entrypoint.S		\
+						bl32/fsp/init/fsp_exceptions.S
 
-BL32_LINKERFILE		:=	bl32/fsp/asm/fsp.ld.S
+BL32_LINKERFILE		:=	bl32/fsp/init/fsp.ld.S
 
 SPIN_ON_FSP			:=	0
 

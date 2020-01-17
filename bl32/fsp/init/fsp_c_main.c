@@ -9,9 +9,9 @@
  */
 
 #include <common/debug.h>
-#include "include/qemu_defs.h"
-#include "include/fsp_private.h"
-#include "include/fsp.h"
+#include "../include/qemu_defs.h"
+#include "../include/fsp_private.h"
+#include "../include/fsp.h"
 
 void fsp_print_debug_message(void)
 {

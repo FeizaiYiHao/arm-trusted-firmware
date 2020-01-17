@@ -16,7 +16,7 @@
 #include "../include/fsp.h"
 #include "../include/fsp_private.h"
 #include "../include/qemu_defs.h"
-#include "fsp_asm_macros.S"
+#include "../include/fsp_asm_macros.S"
 
 
 .globl  fsp_entrypoint

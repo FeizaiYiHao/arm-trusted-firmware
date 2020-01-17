@@ -8,7 +8,7 @@
  * Mostly unchanged from TF-A's bl32/tsp/aarch64/tsp_exceptions.S
  */
 
-#include "fsp_asm_macros.S"
+#include "../include/fsp_asm_macros.S"
 #include "../include/fsp_private.h"
 
 /* ----------------------------------------------------
