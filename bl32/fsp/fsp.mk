@@ -19,9 +19,10 @@ $(eval $(call add_define,SPIN_ON_FSP))
 # We assume a debug build for now.
 #
 
-FSP_RUST_ROOT		:=	bl32/fsp/fsp
+FSP_RUST_ROOT		:=	bl32/fsp/kernel
 
 FSP_RUST_SOURCES	:=	${FSP_RUST_ROOT}/src/lib.rs		\
+						${FSP_RUST_ROOT}/src/log.rs		\
 						${FSP_RUST_ROOT}/Cargo.toml
 
 BL32_LIBS			:=	-lfsp
@@ -31,6 +32,8 @@ LIB_FSP				:=	${BUILD_PLAT}/lib/libfsp.a
 .PHONY: ${BL32_LIBS}
 
 ${BL32_LIBS}: ${LIB_FSP}
+
+${BUILD_PLAT}/bl32/bl32.elf: ${LIB_FSP}
 
 ${LIB_FSP}: ${FSP_RUST_SOURCES}
 	$(ECHO) "Building FSP in Rust"
