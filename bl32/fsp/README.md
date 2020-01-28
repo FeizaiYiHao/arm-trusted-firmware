@@ -14,18 +14,6 @@ The following is the call sequence.
 * It calls fsp_main(), which is in fsp/src/lib.rs. This is in Rust.
 * It calls fsp_print_debug_message(), which is in init/fsp_c_main.c. This is in C.
 
-The build command is:
-
-```
-$ make PLAT=qemu MBEDTLS_DIR=/home/stevko/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=70 BL33=/home/stevko/dev/bin/bl33.bin SPD=fspd all certificates
-```
-
-The run command is:
-
-```
-$ qemu-system-aarch64 -nographic -smp 1 -s -machine virt,secure=on -cpu cortex-a57 -d unimp -semihosting-config enable,target=native -m 1057 -bios bl1.bin
-```
-
 # Build Environment Setup
 
 The instructions here assume Ubuntu 18.04.3 LTS (Bionic Beaver). The ultimate goal is to compile
@@ -181,7 +169,7 @@ We use TF-A's build system to compile FSP. To compile FSP with TF-A, do the foll
 
 ```
 $ cd arm-trusted-firmware
-$ make PLAT=qemu MBEDTLS_DIR=~/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=70 BL33=~/dev/bin/bl33.bin SPD=fspd all certificates
+$ make PLAT=qemu MBEDTLS_DIR=~/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=50 BL33=~/dev/bin/bl33.bin SPD=fspd all certificates
 ```
 
 To test if it is built correctly, do the following.

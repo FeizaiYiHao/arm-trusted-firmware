@@ -25,7 +25,10 @@ FSP_RUST_SOURCES	:=	${FSP_RUST_ROOT}/src/lib.rs		\
 						${FSP_RUST_ROOT}/src/log.rs		\
 						${FSP_RUST_ROOT}/Cargo.toml
 
-BL32_LIBS			:=	-lfsp
+#
+# -lc is necessary because libfsp.a depends on TF-A's libc
+#
+BL32_LIBS			:=	-lfsp -lc
 
 LIB_FSP				:=	${BUILD_PLAT}/lib/libfsp.a
 

@@ -12,5 +12,5 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn fsp_main() {
-    debug!("fsp_main\n");
+    debug!("fsp debug");
 }

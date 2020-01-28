@@ -89,7 +89,6 @@ uint64_t fsp_c_main(void)
 	 * Initialize a console. From plat/arm/common/tsp/arm_tsp_setup.c
 	 */
     fsp_qemu_console_init();
-    VERBOSE("fsp_c_main\n");
     fsp_main();
     return (uint64_t) &fsp_vector_table;
 }

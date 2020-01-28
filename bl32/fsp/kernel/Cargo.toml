@@ -9,6 +9,10 @@ edition = "2018"
 [lib]
 crate-type = ["staticlib"]
 
+[features]
+default = ["debug"] # if you don't want debug messages, use default = [].
+debug = []
+
 [profile.dev]
 panic = "abort"
 
