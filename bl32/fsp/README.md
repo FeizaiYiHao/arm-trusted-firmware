@@ -179,12 +179,39 @@ $ cd ../bin
 $ qemu-system-aarch64 -nographic -smp 1 -s -machine virt,secure=on -cpu cortex-a57 -d unimp -semihosting-config enable,target=native -m 1057 -bios bl1.bin
 ```
 
-It will hang, but if it shows the following messages roughly at the end, it means the build was
-successful. These log messages are printed out by FSP (and FSP Dispatcher).
+It will hang, but if it shows the messages similar to the following, it means the build was
+successful. These log messages are printed out by FSP.
 
 ```
-VERBOSE: Calling fspd_enter_sp
-VERBOSE: fsp_c_main
-NOTICE:  BL32: Debug message
-VERBOSE: Done with fspd_enter_sp
+INFO: BL31: Initializing BL32
+FSP DEBUG: fsp debug
+INFO: BL31: Preparing for EL3 exit to normal world
+INFO: Entry point address = 0x60000000
 ```
+
+## Critical Missing Pieces
+
+Right now, it doesn't do much except printing out debug messages. Even when it prints out debugging
+messages, it uses the existing TF-A's libc and console driver. The following are probably the
+critical pieces that are needed right away.
+
+### Memory Management
+
+There is not even basic heap support yet. This is necessary to do anything useful and serious, so
+it is urgently needed. It's probably not that we need to have a sophisticated paging system right
+now, but we do need basic heap allocation/deallocation support.
+
+### Testing Setup
+
+Rust has a testing framework and we can use this to do unit testing. We need to take a look and see
+how we can leverage it.
+
+### Standard Library Functions
+
+Once we have some heap support, we can perhaps implement standard library functions. Probably not
+everything is needed, but some of them will be helpful, e.g., String, vec, etc.
+
+### Exceptions and Interrupts
+
+Currently, we register dummy handlers for exceptions and interrupts. We need to implement real
+handlers.
