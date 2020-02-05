@@ -133,6 +133,16 @@ Notice that the target is not `aarch64-none-elf`. For Rust, `aarch64-unknown-lin
 enough although it does not target bare metal hardware. This is because we will use `![no_std]` for
 our Rust code. More on this later.
 
+The above commands install the stable version of Rust. However, we sometimes use experimental
+features that can only be compiled by using a nightly version of Rust. So install a nightly Rust.
+
+```
+$ rustup toolchain install nightly
+$ rustup target add aarch64-unknown-linux-gnu
+$ rustup component add llvm-tools-preview
+$ rustup default nightly
+```
+
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
 
 Get our own version of TF-A (this repo), which includes FSP.
