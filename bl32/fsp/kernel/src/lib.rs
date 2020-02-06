@@ -6,11 +6,10 @@
 
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 mod log;
-mod fsp_allocator;
+mod fsp_alloc;
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 
-use alloc::boxed::Box;
 use core::panic::PanicInfo;
 
 /// This function is called on panic.
@@ -22,7 +21,15 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn fsp_main() {
-    debug!("fsp debug");
-    let _x = Box::new(0);
+    debug!("fsp main");
+
+    use alloc::boxed::Box;
+    let x = Box::new(10);
+    let val: u8 = *x;
+    if val == 10 {
+        debug!("val is 10");
+    } else {
+        debug!("val is not 10");
+    }
     debug!("Used Box");
 }

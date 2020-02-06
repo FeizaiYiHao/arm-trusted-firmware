@@ -9,6 +9,7 @@
  */
 
 #include <common/debug.h>
+#include <common/bl_common.h> // for BL32_END
 #include "../include/qemu_defs.h"
 #include "../include/fsp_private.h"
 #include "../include/fsp.h"
@@ -16,6 +17,11 @@
 void fsp_print_debug_message(void)
 {
     NOTICE("BL32: Debug message\n");
+}
+
+uint32_t get_bl32_end(void)
+{
+    return BL32_END;
 }
 
 /*******************************************************************************
