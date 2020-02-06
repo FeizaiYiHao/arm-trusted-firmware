@@ -13,17 +13,16 @@ extern "C" {
     pub fn get_bl32_end() -> u32;
 }
 
-//static FSP_SEC_MEM_BASE: usize = 0x0e100000;
-//static FSP_SEC_MEM_SIZE: usize = 0x00f00000;
+static FSP_SEC_MEM_BASE: usize = 0x0e100000;
+static FSP_SEC_MEM_SIZE: usize = 0x00f00000;
 
 struct FSPAlloc; // a zero-sized struct
 
 unsafe impl GlobalAlloc for FSPAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         debug!("alloc");
-        //let buf_base = FSP_SEC_MEM_BASE + FSP_SEC_MEM_SIZE - layout.size();
-        let buf_base = get_bl32_end();
-        if buf_base < get_bl32_end() {
+        let buf_base = FSP_SEC_MEM_BASE + FSP_SEC_MEM_SIZE - layout.size();
+        if buf_base < get_bl32_end() as usize {
             debug!("buf_base smaller than BL32_END");
             handle_alloc_error(layout);
         }
