@@ -1,8 +1,8 @@
-//!
 //! This has a main entry function fsp_main().
-//!
+
 #![no_std]
 #![feature(alloc_error_handler)] // for our own allocator implementation
+#![feature(const_fn)] // for mutable references in const fn (unstable)
 
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 mod log;
@@ -19,10 +19,22 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+#[global_allocator]
+pub static FSP_ALLOC: fsp_alloc::FspAlloc = fsp_alloc::FspAlloc::new();
+
+#[alloc_error_handler]
+fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
+    panic!()
+}
+
+const FSP_SEC_MEM_BASE: usize = 0x0e100000;
+const FSP_SEC_MEM_SIZE: usize = 0x00f00000;
+
 #[no_mangle]
 pub extern "C" fn fsp_main() {
     debug!("fsp main");
 
+    FSP_ALLOC.init(FSP_SEC_MEM_BASE as *mut u8, FSP_SEC_MEM_SIZE);
     use alloc::boxed::Box;
     let x = Box::new(10);
     let val: u8 = *x;

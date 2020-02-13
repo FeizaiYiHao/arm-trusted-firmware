@@ -1,7 +1,6 @@
-//!
 //! These macros print output to the console. They are very simple at this point and just
 //! accept a single string literal and uses libc's printf.
-//!
+
 #![macro_use]
 
 #[cfg(feature = "debug")]

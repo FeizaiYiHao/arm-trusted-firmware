@@ -122,25 +122,27 @@ following to add `cargo` to your $PATH.
 $ . $HOME/.cargo/env
 ```
 
-Since we need to cross-compile, we need to add a new target for Rust.
-
-```
-$ rustup target add aarch64-unknown-linux-gnu
-$ rustup component add llvm-tools-preview
-```
-
-Notice that the target is not `aarch64-none-elf`. For Rust, `aarch64-unknown-linux-gnu` is good
-enough although it does not target bare metal hardware. This is because we will use `![no_std]` for
-our Rust code. More on this later.
-
 The above commands install the stable version of Rust. However, we sometimes use experimental
 features that can only be compiled by using a nightly version of Rust. So install a nightly Rust.
+We also need to install extra components as we need to cross-compile.
 
 ```
 $ rustup toolchain install nightly
 $ rustup target add aarch64-unknown-linux-gnu
 $ rustup component add llvm-tools-preview
 $ rustup default nightly
+```
+
+Notice that the target is not `aarch64-none-elf`. For Rust, `aarch64-unknown-linux-gnu` is good
+enough although it does not target bare metal hardware. This is because we will use `![no_std]` for
+our Rust code. More on this later.
+
+We also need the Rust source and `cargo-xbuild` in order to build libcore correctly for our target
+and environment.
+
+```
+$ rustup component add rust-src
+$ cargo install cargo-xbuild
 ```
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
