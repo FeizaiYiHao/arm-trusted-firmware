@@ -27,6 +27,13 @@ fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
     panic!()
 }
 
+// Copied values from include/qemu_defs.h
+// BL32_END is the end address of the BL32 image
+// FSP_SEC_MEM_BASE is the base address for the secure DRAM
+// FSP_SEC_MEM_SIZE is the size of the secure DRAM
+extern "C" {
+    pub fn get_bl32_end() -> u32;
+}
 const FSP_SEC_MEM_BASE: usize = 0x0e100000;
 const FSP_SEC_MEM_SIZE: usize = 0x00f00000;
 
@@ -34,7 +41,15 @@ const FSP_SEC_MEM_SIZE: usize = 0x00f00000;
 pub extern "C" fn fsp_main() {
     debug!("fsp main");
 
-    FSP_ALLOC.init(FSP_SEC_MEM_BASE as *mut u8, FSP_SEC_MEM_SIZE);
+    // For now, adding the whole available secure memory for dynamic allocation
+    let mut base = unsafe { get_bl32_end() } as usize;
+    let mut size = FSP_SEC_MEM_SIZE;
+    if base > FSP_SEC_MEM_BASE {
+        size = FSP_SEC_MEM_SIZE - (base - FSP_SEC_MEM_BASE);
+    } else {
+        base = FSP_SEC_MEM_BASE;
+    };
+    FSP_ALLOC.init(base, size);
     use alloc::boxed::Box;
     let x = Box::new(10);
     let val: u8 = *x;
