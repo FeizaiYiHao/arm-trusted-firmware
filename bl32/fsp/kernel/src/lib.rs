@@ -42,7 +42,7 @@ pub extern "C" fn fsp_main() {
     debug!("fsp main");
 
     // For now, adding the whole available secure memory for dynamic allocation
-    let mut base = unsafe { get_bl32_end() } as usize;
+    let mut base = unsafe { get_bl32_end() as usize };
     let mut size = FSP_SEC_MEM_SIZE;
     if base > FSP_SEC_MEM_BASE {
         size = FSP_SEC_MEM_SIZE - (base - FSP_SEC_MEM_BASE);
@@ -52,11 +52,18 @@ pub extern "C" fn fsp_main() {
     FSP_ALLOC.init(base, size);
     use alloc::boxed::Box;
     let x = Box::new(10);
-    let val: u8 = *x;
-    if val == 10 {
-        debug!("val is 10");
+    let y = Box::new(1000);
+    let val_x: u32 = *x;
+    let val_y: u32 = *y;
+    if val_x == 10 {
+        debug!("val_x is 10");
     } else {
-        debug!("val is not 10");
+        debug!("val_x is not 10");
     }
-    debug!("Used Box");
+    if val_y == 1000 {
+        debug!("val_y is 1000");
+    } else {
+        debug!("val_y is not 1000");
+    }
+    debug!("fsp main done");
 }
