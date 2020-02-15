@@ -12,7 +12,9 @@ const SIZE_QUANT: usize = 4;
 ///! End sentinel: value placed in bsize field of dummy block delimiting
 ///! end of pool block. The most negative number which will fit in a
 ///! bufsize, defined in a way that the compiler will accept.
-const ESENT: isize = (-(((1 << (core::mem::size_of::<isize>() * 8 - 2)) - 1) * 2) - 2);
+//const ESENT: isize = (-(((1 << (core::mem::size_of::<isize>() * 8 - 2)) - 1) * 2) - 2);
+// TODO: Not sure if this is okay
+const ESENT: usize = usize::max_value();
 
 //struct bhead {
 //    bufsize prevfree;               /* Relative link back to previous
@@ -246,9 +248,11 @@ impl FspAlloc {
 
         let len = len - core::mem::size_of::<BHead>();
         b.set_bsize(len);
-        let bn: &mut BHead = BHead::new_mut_ref_from_addr(buf + len as usize);
+        b.set_allocated(false);
+
+        let bn: &mut BHead = BHead::new_mut_ref_from_addr(buf + len);
         bn.set_prevfree(len);
-        bn.set_bsize(ESENT as usize); // TODO: not sure if this conversion is correct.
+        bn.set_bsize(ESENT);
         bn.set_allocated(true);
     }
 
@@ -302,7 +306,6 @@ unsafe impl GlobalAlloc for FspAlloc {
                     /* Link allocated buffer to the previous free buffer. */
                     ba.set_prevfree(bsize);
                     /* Plug negative size into user buffer. */
-                    //ba->bsize = -(bufsize) size;
                     ba.set_bsize(size);
                     ba.set_allocated(true);
                     /* Mark buffer after this one not preceded by free block. */
@@ -317,7 +320,6 @@ unsafe impl GlobalAlloc for FspAlloc {
                     b.get_blink_mut_ref().set_flink(b.get_flink_ref());
                     b.get_flink_mut_ref().set_blink(b.get_blink_ref());
                     /* Negate size to mark buffer allocated. */
-                    //b->bh.bsize = -(b->bh.bsize);
                     b.set_bsize(b.get_bsize());
                     b.set_allocated(true);
                     /* Zero the back pointer in the next buffer in memory
