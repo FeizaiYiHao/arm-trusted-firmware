@@ -44,7 +44,7 @@ impl BHead {
         self.set_allocated(allocated);
     }
 
-    fn get_addr(&self) -> usize {
+    fn addr(&self) -> usize {
         self as *const BHead as usize
     }
 
@@ -65,7 +65,7 @@ impl BHead {
         unsafe { &mut *(self as *const BHead as usize as *mut BHead) }
     }
 
-    fn get_prevfree(&self) -> usize {
+    fn prevfree(&self) -> usize {
         self.prevfree
     }
 
@@ -73,7 +73,7 @@ impl BHead {
         self.as_mut_ref().prevfree = prevfree;
     }
 
-    fn get_bsize(&self) -> usize {
+    fn bsize(&self) -> usize {
         self.bsize
     }
 
@@ -127,7 +127,7 @@ impl BFHead {
         unsafe { &mut *(addr as *mut BFHead) }
     }
 
-    fn get_addr(&self) -> usize {
+    fn addr(&self) -> usize {
         self as *const BFHead as usize
     }
 
@@ -135,40 +135,40 @@ impl BFHead {
         unsafe { &mut *(self as *const BFHead as usize as *mut BFHead) }
     }
 
-    fn get_blink_ref(&self) -> &BFHead {
+    fn blink_ref(&self) -> &BFHead {
         unsafe { &*(self.ql.blink as *const BFHead) }
     }
 
-    fn get_blink_mut_ref(&self) -> &mut BFHead {
+    fn blink_mut_ref(&self) -> &mut BFHead {
         unsafe { &mut *(self.ql.blink as *mut BFHead) }
     }
 
-    fn get_flink_ref(&self) -> &BFHead {
+    fn flink_ref(&self) -> &BFHead {
         unsafe { &*(self.ql.flink as *const BFHead) }
     }
 
-    fn get_flink_mut_ref(&self) -> &mut BFHead {
+    fn flink_mut_ref(&self) -> &mut BFHead {
         unsafe { &mut *(self.ql.flink as *mut BFHead) }
     }
 
     fn set_blink(&self, blink: &BFHead) {
-        self.as_mut_ref().ql.blink = blink.get_addr();
+        self.as_mut_ref().ql.blink = blink.addr();
     }
 
     fn set_flink(&self, flink: &BFHead) {
-        self.as_mut_ref().ql.flink = flink.get_addr();
+        self.as_mut_ref().ql.flink = flink.addr();
     }
 
-    fn get_prevfree(&self) -> usize {
-        self.bh.get_prevfree()
+    fn prevfree(&self) -> usize {
+        self.bh.prevfree()
     }
 
     fn set_prevfree(&self, prevfree: usize) {
         self.bh.set_prevfree(prevfree);
     }
 
-    fn get_bsize(&self) -> usize {
-        self.bh.get_bsize()
+    fn bsize(&self) -> usize {
+        self.bh.bsize()
     }
 
     fn set_bsize(&self, bsize: usize) {
@@ -184,7 +184,7 @@ impl BFHead {
     }
 
     fn eq(&self, target: &BFHead) -> bool {
-        self.get_addr() == target.get_addr()
+        self.addr() == target.addr()
     }
 }
 
@@ -234,9 +234,9 @@ impl FspAlloc {
         //freelist.ql.blink = b;
         //b->ql.blink->ql.flink = b;
         b.set_flink(&self.freelist);
-        b.set_blink(self.freelist.get_blink_ref());
+        b.set_blink(self.freelist.blink_ref());
         self.freelist.set_blink(b);
-        b.get_blink_mut_ref().set_flink(b);
+        b.blink_mut_ref().set_flink(b);
 
         /* Create a dummy allocated buffer at the end of the pool. This dummy
         buffer is seen when a buffer at the end of the pool is released and
@@ -284,10 +284,10 @@ unsafe impl GlobalAlloc for FspAlloc {
         size = (size + (SIZE_QUANT - 1)) & (!(SIZE_QUANT - 1));
         size = size + core::mem::size_of::<BHead>();
 
-        let mut b = self.freelist.get_flink_mut_ref();
+        let mut b = self.freelist.flink_mut_ref();
 
         while !b.eq(&self.freelist) {
-            let bsize = b.get_bsize();
+            let bsize = b.bsize();
             if bsize >= size {
                 /* Buffer  is big enough to satisfy  the request.  Allocate it
                 to the caller.  We must decide whether the buffer is  large
@@ -298,8 +298,8 @@ unsafe impl GlobalAlloc for FspAlloc {
                 buffer if enough room remains for a header plus the minimum
                 quantum of allocation. */
                 if (bsize - size) > (self.size_q() + core::mem::size_of::<BFHead>()) {
-                    let ba: &mut BHead = BHead::from_addr(b.get_addr() + bsize - size);
-                    let bn: &mut BHead = BHead::from_addr(ba.get_addr() + size);
+                    let ba: &mut BHead = BHead::from_addr(b.addr() + bsize - size);
+                    let bn: &mut BHead = BHead::from_addr(ba.addr() + size);
                     /* Subtract size from length of free block. */
                     let bsize = bsize - size;
                     b.set_bsize(bsize);
@@ -311,25 +311,25 @@ unsafe impl GlobalAlloc for FspAlloc {
                     /* Mark buffer after this one not preceded by free block. */
                     bn.set_prevfree(0);
 
-                    return (ba.get_addr() + core::mem::size_of::<BHead>()) as *mut u8;
+                    return (ba.addr() + core::mem::size_of::<BHead>()) as *mut u8;
                 } else {
                     /* The buffer isn't big enough to split.  Give  the  whole
                     shebang to the caller and remove it from the free list. */
-                    let ba: &mut BHead = BHead::from_addr(b.get_addr() + b.get_bsize());
+                    let ba: &mut BHead = BHead::from_addr(b.addr() + b.bsize());
 
-                    b.get_blink_mut_ref().set_flink(b.get_flink_ref());
-                    b.get_flink_mut_ref().set_blink(b.get_blink_ref());
+                    b.blink_mut_ref().set_flink(b.flink_ref());
+                    b.flink_mut_ref().set_blink(b.blink_ref());
                     /* Negate size to mark buffer allocated. */
-                    b.set_bsize(b.get_bsize());
+                    b.set_bsize(b.bsize());
                     b.set_allocated(true);
                     /* Zero the back pointer in the next buffer in memory
                     to indicate that this buffer is allocated. */
                     ba.set_prevfree(0);
-                    return (b.get_addr() + core::mem::size_of::<BHead>()) as *mut u8;
+                    return (b.addr() + core::mem::size_of::<BHead>()) as *mut u8;
                 }
             }
 
-            b = b.get_flink_mut_ref(); /* Link to next buffer */
+            b = b.flink_mut_ref(); /* Link to next buffer */
         }
 
         // BECtl not implemented
@@ -343,17 +343,8 @@ unsafe impl GlobalAlloc for FspAlloc {
         let mut b: &mut BFHead = BFHead::from_addr((buf as usize) - core::mem::size_of::<BHead>());
 
         // TODO: need to do something for the following?
-        /*
         /* Buffer size must be negative, indicating that the buffer is
         allocated. */
-        if let Some(bsize) = b.get_bsize() {
-            if bsize >= 0 {
-                // bn = NULL;
-            }
-        } else {
-            // bn = NULL;
-        }
-        */
 
         /*
 
@@ -365,24 +356,24 @@ unsafe impl GlobalAlloc for FspAlloc {
         */
 
         /* If the back link is nonzero, the previous buffer is free.  */
-        if b.get_prevfree() != 0 {
+        if b.prevfree() != 0 {
             /* The previous buffer is free. Consolidate this buffer with it
             by adding the length of this buffer to the previous free
             buffer. Note that we subtract the size in the buffer being
             released, since it's negative to indicate that the buffer is
             allocated. */
-            let size = b.get_bsize();
-            b = BFHead::from_addr(b.get_addr() - b.get_prevfree());
-            b.set_bsize(b.get_bsize() + size);
+            let size = b.bsize();
+            b = BFHead::from_addr(b.addr() - b.prevfree());
+            b.set_bsize(b.bsize() + size);
             b.set_allocated(false);
         } else {
             /* The previous buffer isn't allocated. Insert this buffer
             on the free list as an isolated free block. */
             b.set_flink(&self.freelist);
-            b.set_blink(&self.freelist.get_blink_ref());
+            b.set_blink(&self.freelist.blink_ref());
             self.freelist.set_blink(b);
-            b.get_blink_mut_ref().set_flink(b);
-            b.set_bsize(b.get_bsize());
+            b.blink_mut_ref().set_flink(b);
+            b.set_bsize(b.bsize());
             b.set_allocated(false);
         }
 
@@ -390,14 +381,14 @@ unsafe impl GlobalAlloc for FspAlloc {
         the  start  of  this  buffer  by its size, to see if that buffer is
         free.  If it is, we combine  this  buffer  with      the  next  one  in
         memory, dechaining the second buffer from the free list. */
-        let mut bn: &mut BFHead = BFHead::from_addr(b.get_addr() + b.get_bsize());
+        let mut bn: &mut BFHead = BFHead::from_addr(b.addr() + b.bsize());
 
         if !bn.is_allocated() {
             /* The buffer is free.  Remove it from the free list and add
             its size to that of our buffer. */
-            bn.get_blink_mut_ref().set_flink(bn.get_flink_ref());
-            bn.get_flink_mut_ref().set_blink(bn.get_blink_ref());
-            b.set_bsize(b.get_bsize() + bn.get_bsize());
+            bn.blink_mut_ref().set_flink(bn.flink_ref());
+            bn.flink_mut_ref().set_blink(bn.blink_ref());
+            b.set_bsize(b.bsize() + bn.bsize());
 
             /* Finally,  advance  to   the  buffer  that   follows  the  newly
             consolidated free block.  We must set its  backpointer  to  the
@@ -406,12 +397,12 @@ unsafe impl GlobalAlloc for FspAlloc {
             guarantees  that  two  free  blocks will never be contiguous in
             memory.  */
 
-            bn = BFHead::from_addr(b.get_addr() + b.get_bsize());
+            bn = BFHead::from_addr(b.addr() + b.bsize());
         }
 
         /* The next buffer is allocated.  Set the backpointer in it  to  point
         to this buffer; the previous free buffer in memory. */
-        bn.set_prevfree(b.get_bsize());
+        bn.set_prevfree(b.bsize());
         debug!("dealloc done");
     }
 }

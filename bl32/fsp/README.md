@@ -139,11 +139,12 @@ $ rustup component add rust-src
 $ cargo install cargo-xbuild
 ```
 
-Note that our target triplet is `aarch64-unknown-none-softfloat`. This is because we're using
-`![no_std]` and running on bare metal hardware. `softfloat` means that we're disabling floating
-point and SIMD registers. Enabling those registers does not work as it is prevented by TF-A.
-`aarch64-unknown-none-softfloat` is a [tier-3 target](https://forge.rust-lang.org/release/platform-support.html).
-Because of that, we need to be aware that it may cause a problem.
+Note that our target triplet is `aarch64-unknown-none-softfloat` (in `kernel/.cargo/config`). This
+is because we're using `![no_std]` and running on bare metal hardware. `softfloat` means that we're
+disabling floating point and SIMD registers. Enabling those registers does not work as it is
+prevented by TF-A.  `aarch64-unknown-none-softfloat` is a [tier-3
+target](https://forge.rust-lang.org/release/platform-support.html).  Because of that, we need to be
+aware that it may cause a problem.
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
 
