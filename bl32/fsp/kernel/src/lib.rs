@@ -5,6 +5,7 @@
 #![feature(const_fn)] // for mutable references in const fn (unstable)
 
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
+
 mod log;
 mod fsp_alloc;
 
@@ -64,6 +65,17 @@ pub extern "C" fn fsp_main() {
         debug!("val_y is 1000");
     } else {
         debug!("val_y is not 1000");
+    }
+    let one_plus_one = stringify!(1 + 1);
+    assert_eq!(one_plus_one, "1 + 1");
+    use alloc::string::*;
+    let s = "Hello".to_string();
+    if s.as_str() == "str" {
+        debug!("string is str");
+    } else if s.as_str() == "Hello" {
+        debug!("string is Hello");
+    } else {
+        debug!("string is not recognized");
     }
     debug!("fsp main done");
 }

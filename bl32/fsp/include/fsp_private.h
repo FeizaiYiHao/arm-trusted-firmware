@@ -73,6 +73,7 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include <string.h> // for using strncmp()
 
 #include "qemu_defs.h" /* For CACHE_WRITEBACK_GRANULE */
 
@@ -165,6 +166,7 @@ uint64_t fsp_c_main(void);
 void fsp_main(void);
 void fsp_print_debug_loop_message(void);
 void fsp_qemu_console_init(void);
+int bcmp(const void *s1, const void *s2, size_t n);
 
 #endif /* __ASSEMBLER__ */
 

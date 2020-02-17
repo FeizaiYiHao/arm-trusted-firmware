@@ -33,6 +33,8 @@ BL32_LIBS			:=	-lfsp -lc
 
 LIB_FSP				:=	${BUILD_PLAT}/lib/libfsp.a
 
+TARGET				:=	aarch64-unknown-none-softfloat
+
 .PHONY: ${BL32_LIBS}
 
 ${BL32_LIBS}: ${LIB_FSP}
@@ -41,5 +43,5 @@ ${BUILD_PLAT}/bl32/bl32.elf: ${LIB_FSP}
 
 ${LIB_FSP}: ${FSP_RUST_SOURCES}
 	$(ECHO) "Building FSP in Rust"
-	$(Q)cd ${FSP_RUST_ROOT} && cargo xbuild --target aarch64-unknown-linux-gnu
-	$(Q)cp ${FSP_RUST_ROOT}/target/aarch64-unknown-linux-gnu/debug/libfsp.a ${LIB_FSP}
+	$(Q)cd ${FSP_RUST_ROOT} && cargo xbuild
+	$(Q)cp ${FSP_RUST_ROOT}/target/${TARGET}/debug/libfsp.a ${LIB_FSP}

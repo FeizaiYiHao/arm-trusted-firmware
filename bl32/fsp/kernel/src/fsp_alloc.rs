@@ -57,7 +57,7 @@ impl BHead {
     }
 
     // TODO: should this be 'static?
-    fn new_mut_ref_from_addr(addr: usize) -> &'static mut BHead {
+    fn from_addr(addr: usize) -> &'static mut BHead {
         unsafe { &mut *(addr as *mut BHead) }
     }
 
@@ -123,7 +123,7 @@ impl BFHead {
     //}
 
     // TODO: should this be 'static?
-    fn new_mut_ref_from_addr(addr: usize) -> &'static mut BFHead {
+    fn from_addr(addr: usize) -> &'static mut BFHead {
         unsafe { &mut *(addr as *mut BFHead) }
     }
 
@@ -221,7 +221,7 @@ impl FspAlloc {
         // assert(freelist.ql.blink->ql.flink == &freelist);
         // assert(freelist.ql.flink->ql.blink == &freelist);
 
-        let b: &mut BFHead = BFHead::new_mut_ref_from_addr(buf);
+        let b: &mut BFHead = BFHead::from_addr(buf);
 
         /* Clear the backpointer at the start of the block to indicate that
         there is no free block prior to this one. That blocks
@@ -250,7 +250,7 @@ impl FspAlloc {
         b.set_bsize(len);
         b.set_allocated(false);
 
-        let bn: &mut BHead = BHead::new_mut_ref_from_addr(buf + len);
+        let bn: &mut BHead = BHead::from_addr(buf + len);
         bn.set_prevfree(len);
         bn.set_bsize(ESENT);
         bn.set_allocated(true);
@@ -298,8 +298,8 @@ unsafe impl GlobalAlloc for FspAlloc {
                 buffer if enough room remains for a header plus the minimum
                 quantum of allocation. */
                 if (bsize - size) > (self.size_q() + core::mem::size_of::<BFHead>()) {
-                    let ba: &mut BHead = BHead::new_mut_ref_from_addr(b.get_addr() + bsize - size);
-                    let bn: &mut BHead = BHead::new_mut_ref_from_addr(ba.get_addr() + size);
+                    let ba: &mut BHead = BHead::from_addr(b.get_addr() + bsize - size);
+                    let bn: &mut BHead = BHead::from_addr(ba.get_addr() + size);
                     /* Subtract size from length of free block. */
                     let bsize = bsize - size;
                     b.set_bsize(bsize);
@@ -315,7 +315,7 @@ unsafe impl GlobalAlloc for FspAlloc {
                 } else {
                     /* The buffer isn't big enough to split.  Give  the  whole
                     shebang to the caller and remove it from the free list. */
-                    let ba: &mut BHead = BHead::new_mut_ref_from_addr(b.get_addr() + b.get_bsize());
+                    let ba: &mut BHead = BHead::from_addr(b.get_addr() + b.get_bsize());
 
                     b.get_blink_mut_ref().set_flink(b.get_flink_ref());
                     b.get_flink_mut_ref().set_blink(b.get_blink_ref());
@@ -340,8 +340,7 @@ unsafe impl GlobalAlloc for FspAlloc {
     unsafe fn dealloc(&self, buf: *mut u8, _layout: Layout) {
         debug!("dealloc");
 
-        let mut b: &mut BFHead =
-            BFHead::new_mut_ref_from_addr((buf as usize) - core::mem::size_of::<BHead>());
+        let mut b: &mut BFHead = BFHead::from_addr((buf as usize) - core::mem::size_of::<BHead>());
 
         // TODO: need to do something for the following?
         /*
@@ -373,7 +372,7 @@ unsafe impl GlobalAlloc for FspAlloc {
             released, since it's negative to indicate that the buffer is
             allocated. */
             let size = b.get_bsize();
-            b = BFHead::new_mut_ref_from_addr(b.get_addr() - b.get_prevfree());
+            b = BFHead::from_addr(b.get_addr() - b.get_prevfree());
             b.set_bsize(b.get_bsize() + size);
             b.set_allocated(false);
         } else {
@@ -391,7 +390,7 @@ unsafe impl GlobalAlloc for FspAlloc {
         the  start  of  this  buffer  by its size, to see if that buffer is
         free.  If it is, we combine  this  buffer  with      the  next  one  in
         memory, dechaining the second buffer from the free list. */
-        let mut bn: &mut BFHead = BFHead::new_mut_ref_from_addr(b.get_addr() + b.get_bsize());
+        let mut bn: &mut BFHead = BFHead::from_addr(b.get_addr() + b.get_bsize());
 
         if !bn.is_allocated() {
             /* The buffer is free.  Remove it from the free list and add
@@ -407,7 +406,7 @@ unsafe impl GlobalAlloc for FspAlloc {
             guarantees  that  two  free  blocks will never be contiguous in
             memory.  */
 
-            bn = BFHead::new_mut_ref_from_addr(b.get_addr() + b.get_bsize());
+            bn = BFHead::from_addr(b.get_addr() + b.get_bsize());
         }
 
         /* The next buffer is allocated.  Set the backpointer in it  to  point

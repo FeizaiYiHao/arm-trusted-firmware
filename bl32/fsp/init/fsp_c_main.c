@@ -24,6 +24,13 @@ uint32_t get_bl32_end(void)
     return BL32_END;
 }
 
+/*
+ * Rust's libcore calls this function but TF-A's libc doesn't have it.
+ */
+int bcmp(const void *s1, const void *s2, size_t n) {
+    return strncmp((const char *) s1, (const char *) s2, n);
+}
+
 /*******************************************************************************
  * Per cpu data structure to populate parameters for an SMC in C code and use
  * a pointer to this structure in assembler code to populate x0-x7
