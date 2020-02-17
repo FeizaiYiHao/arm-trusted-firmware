@@ -43,5 +43,5 @@ ${BUILD_PLAT}/bl32/bl32.elf: ${LIB_FSP}
 
 ${LIB_FSP}: ${FSP_RUST_SOURCES}
 	$(ECHO) "Building FSP in Rust"
-	$(Q)cd ${FSP_RUST_ROOT} && cargo xbuild
+	$(Q)cd ${FSP_RUST_ROOT} && cargo xbuild --target ${TARGET}
 	$(Q)cp ${FSP_RUST_ROOT}/target/${TARGET}/debug/libfsp.a ${LIB_FSP}
