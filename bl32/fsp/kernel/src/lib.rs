@@ -36,7 +36,7 @@ extern "C" {
     pub fn get_bl32_end() -> u32;
 }
 const FSP_SEC_MEM_BASE: usize = 0x0e100000;
-const FSP_SEC_MEM_SIZE: usize = 0x00f00000;
+const FSP_SEC_MEM_SIZE: usize = 0x00f00000; // This is 15MB.
 
 #[no_mangle]
 pub extern "C" fn fsp_main() {
@@ -51,31 +51,50 @@ pub extern "C" fn fsp_main() {
         base = FSP_SEC_MEM_BASE;
     };
     FSP_ALLOC.init(base, size);
+
     use alloc::boxed::Box;
-    let x = Box::new(10);
-    let y = Box::new(1000);
-    let val_x: u32 = *x;
-    let val_y: u32 = *y;
-    if val_x == 10 {
-        debug!("val_x is 10");
-    } else {
-        debug!("val_x is not 10");
+    use alloc::vec::Vec;
+    let mut v: Vec<Box<usize>> = Vec::new();
+    for number in 0..100000 {
+        let x = Box::<usize>::new(number);
+        v.push(x);
     }
-    if val_y == 1000 {
-        debug!("val_y is 1000");
-    } else {
-        debug!("val_y is not 1000");
+    for i in (0..100000).rev() {
+        let item = v.pop();
+        if let Some(x) = item {
+            if *x == i {
+                debug!("equal");
+            } else {
+                debug!("not equal");
+            }
+        } else {
+            debug!("None");
+        }
     }
-    let one_plus_one = stringify!(1 + 1);
-    assert_eq!(one_plus_one, "1 + 1");
-    use alloc::string::*;
-    let s = "Hello".to_string();
-    if s.as_str() == "str" {
-        debug!("string is str");
-    } else if s.as_str() == "Hello" {
-        debug!("string is Hello");
-    } else {
-        debug!("string is not recognized");
-    }
+    //let x = Box::new(10);
+    //let y = Box::new(1000);
+    //let val_x: u32 = *x;
+    //let val_y: u32 = *y;
+    //if val_x == 10 {
+    //    debug!("val_x is 10");
+    //} else {
+    //    debug!("val_x is not 10");
+    //}
+    //if val_y == 1000 {
+    //    debug!("val_y is 1000");
+    //} else {
+    //    debug!("val_y is not 1000");
+    //}
+    //let one_plus_one = stringify!(1 + 1);
+    //assert_eq!(one_plus_one, "1 + 1");
+    //use alloc::string::*;
+    //let s = "Hello".to_string();
+    //if s.as_str() == "str" {
+    //    debug!("string is str");
+    //} else if s.as_str() == "Hello" {
+    //    debug!("string is Hello");
+    //} else {
+    //    debug!("string is not recognized");
+    //}
     debug!("fsp main done");
 }
