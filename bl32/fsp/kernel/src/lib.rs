@@ -51,50 +51,28 @@ pub extern "C" fn fsp_main() {
         base = FSP_SEC_MEM_BASE;
     };
     FSP_ALLOC.init(base, size);
+    mem_test();
 
+    debug!("fsp main done");
+}
+
+fn mem_test() {
     use alloc::boxed::Box;
+    use alloc::string::String;
+    use alloc::string::ToString;
     use alloc::vec::Vec;
-    let mut v: Vec<Box<usize>> = Vec::new();
+    let mut n_lst: Vec<Box<u32>> = Vec::new();
+    let mut s_lst: Vec<String> = Vec::new();
     for number in 0..100000 {
-        let x = Box::<usize>::new(number);
-        v.push(x);
+        let x = Box::<u32>::new(number);
+        n_lst.push(x);
+        s_lst.push(number.to_string());
     }
-    for i in (0..100000).rev() {
-        let item = v.pop();
-        if let Some(x) = item {
-            if *x == i {
-                debug!("equal");
-            } else {
-                debug!("not equal");
-            }
+    while let Some(n) = n_lst.pop() {
+        if let Some(s) = s_lst.pop() {
+            assert_eq!(*n, s.parse::<u32>().unwrap());
         } else {
-            debug!("None");
+            panic!("none");
         }
     }
-    //let x = Box::new(10);
-    //let y = Box::new(1000);
-    //let val_x: u32 = *x;
-    //let val_y: u32 = *y;
-    //if val_x == 10 {
-    //    debug!("val_x is 10");
-    //} else {
-    //    debug!("val_x is not 10");
-    //}
-    //if val_y == 1000 {
-    //    debug!("val_y is 1000");
-    //} else {
-    //    debug!("val_y is not 1000");
-    //}
-    //let one_plus_one = stringify!(1 + 1);
-    //assert_eq!(one_plus_one, "1 + 1");
-    //use alloc::string::*;
-    //let s = "Hello".to_string();
-    //if s.as_str() == "str" {
-    //    debug!("string is str");
-    //} else if s.as_str() == "Hello" {
-    //    debug!("string is Hello");
-    //} else {
-    //    debug!("string is not recognized");
-    //}
-    debug!("fsp main done");
 }
