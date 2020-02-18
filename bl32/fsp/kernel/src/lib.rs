@@ -61,6 +61,7 @@ fn mem_test() {
     use alloc::string::String;
     use alloc::string::ToString;
     use alloc::vec::Vec;
+
     let mut n_lst: Vec<Box<u32>> = Vec::new();
     let mut s_lst: Vec<String> = Vec::new();
     for number in 0..100000 {
