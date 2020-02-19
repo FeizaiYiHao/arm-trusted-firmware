@@ -277,8 +277,6 @@ impl FspAlloc {
 
 unsafe impl GlobalAlloc for FspAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        debug!("alloc");
-
         let mut size: usize = layout.size();
         /* Need at least room for the queue links. */
         if size < self.size_q() {
@@ -360,14 +358,12 @@ unsafe impl GlobalAlloc for FspAlloc {
 
         // BECtl not implemented
 
-        debug!("No memory left to allocate");
+        static_debug!("No memory left to allocate");
 
         null_mut()
     }
 
     unsafe fn dealloc(&self, buf: *mut u8, _layout: Layout) {
-        debug!("dealloc");
-
         assert!(
             !buf.is_null(),
             "FspAlloc.dealloc() deallocating a null buffer"
@@ -466,6 +462,5 @@ unsafe impl GlobalAlloc for FspAlloc {
             "FspAlloc.dealloc() inconsistent allocation state"
         );
         bn.set_prevfree(b.bsize());
-        debug!("dealloc done");
     }
 }

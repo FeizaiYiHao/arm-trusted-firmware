@@ -9,9 +9,10 @@ extern "C" {
     pub fn printf(fmt: *const u8, ...);
 }
 
+///! This is used when there is no dynamic memory.
 #[macro_export]
-macro_rules! debug {
-    ( $x:expr ) => {
+macro_rules! static_debug {
+    ( $x:literal ) => {
         #[cfg(feature = "debug")]
         {
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
@@ -19,6 +20,22 @@ macro_rules! debug {
                 crate::log::printf(
                     concat!("FSP DEBUG: ", $x, '\n', '\0').as_bytes().as_ptr() as *const u8
                 );
+            }
+        }
+    };
+}
+
+///! This can only be used when there is dynamic memory.
+#[macro_export]
+macro_rules! debug {
+    ( $($x:expr),+ ) => {
+        #[cfg(feature = "debug")]
+        {
+            let s = alloc::format!($($x),+);
+            let s = alloc::format!("FSP DEBUG: {}{}{}", s, '\n', '\0');
+            #[allow(unused_unsafe)] // to avoid nested unsafe warnings
+            unsafe {
+                crate::log::printf(s.as_bytes().as_ptr() as *const u8);
             }
         }
     };

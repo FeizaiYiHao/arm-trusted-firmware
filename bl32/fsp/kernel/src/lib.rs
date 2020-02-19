@@ -16,7 +16,7 @@ use core::panic::PanicInfo;
 /// This function is called on panic.
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    debug!("Panic");
+    static_debug!("Panic");
     loop {}
 }
 
@@ -38,10 +38,9 @@ extern "C" {
 const FSP_SEC_MEM_BASE: usize = 0x0e100000;
 const FSP_SEC_MEM_SIZE: usize = 0x00f00000; // This is 15MB.
 
+///! This is the initialization function that should be called first before anything else.
 #[no_mangle]
-pub extern "C" fn fsp_main() {
-    debug!("fsp main");
-
+pub extern "C" fn fsp_init() {
     // For now, adding the whole available secure memory for dynamic allocation
     let mut base = unsafe { get_bl32_end() as usize };
     let mut size = FSP_SEC_MEM_SIZE;
@@ -51,6 +50,13 @@ pub extern "C" fn fsp_main() {
         base = FSP_SEC_MEM_BASE;
     };
     FSP_ALLOC.init(base, size);
+}
+
+///! This is the main function.
+#[no_mangle]
+pub extern "C" fn fsp_main() {
+    debug!("fsp main");
+
     mem_test();
 
     debug!("fsp main done");
@@ -62,6 +68,7 @@ fn mem_test() {
     use alloc::string::ToString;
     use alloc::vec::Vec;
 
+    debug!("mem_test");
     let mut n_lst: Vec<Box<u32>> = Vec::new();
     let mut s_lst: Vec<String> = Vec::new();
     for number in 0..100000 {
@@ -72,8 +79,10 @@ fn mem_test() {
     while let Some(n) = n_lst.pop() {
         if let Some(s) = s_lst.pop() {
             assert_eq!(*n, s.parse::<u32>().unwrap());
+            debug!("number: {}", *n);
         } else {
             panic!("none");
         }
     }
+    debug!("mem_test done");
 }
