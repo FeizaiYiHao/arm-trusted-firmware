@@ -31,8 +31,8 @@ macro_rules! debug {
     ( $($x:expr),+ ) => {
         #[cfg(feature = "debug")]
         {
-            let s = alloc::format!($($x),+);
-            let s = alloc::format!("FSP DEBUG: {}{}{}", s, '\n', '\0');
+            assert!(crate::FSP_ALLOC.is_initialized(), "Global Allocator is not initialized");
+            let s = alloc::format!("FSP DEBUG: {}{}{}", alloc::format!($($x),+), '\n', '\0');
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
             unsafe {
                 crate::log::printf(s.as_bytes().as_ptr() as *const u8);

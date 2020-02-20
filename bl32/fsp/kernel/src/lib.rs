@@ -7,6 +7,7 @@
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 
 mod log;
+mod console;
 mod fsp_alloc;
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
@@ -50,6 +51,8 @@ pub extern "C" fn fsp_init() {
         base = FSP_SEC_MEM_BASE;
     };
     FSP_ALLOC.init(base, size);
+
+    console::fsp_console_init();
 }
 
 ///! This is the main function.
@@ -68,14 +71,41 @@ fn mem_test() {
     use alloc::string::ToString;
     use alloc::vec::Vec;
 
-    debug!("mem_test");
     let mut n_lst: Vec<Box<u32>> = Vec::new();
     let mut s_lst: Vec<String> = Vec::new();
-    for number in 0..100000 {
+    debug!("mem_test inserting");
+    for number in 0..10000 {
         let x = Box::<u32>::new(number);
         n_lst.push(x);
         s_lst.push(number.to_string());
     }
+
+    for number in 0..5000 {
+        if let Some(n) = n_lst.pop() {
+            if let Some(s) = s_lst.pop() {
+                assert_eq!(*n, s.parse::<u32>().unwrap());
+                debug!("number: {}", *n);
+            } else {
+                panic!("none");
+            }
+        } else {
+            panic!("none");
+        }
+        let x = Box::<u32>::new(number);
+        n_lst.insert(number as usize, x);
+        s_lst.insert(number as usize, number.to_string());
+    }
+
+    for number in 0..5000 {
+        let x = Box::<u32>::new(number);
+        n_lst.push(x);
+        s_lst.push(number.to_string());
+        let n = n_lst.remove((number * 2) as usize);
+        let s = s_lst.remove((number * 2) as usize);
+        assert_eq!(*n, s.parse::<u32>().unwrap());
+        debug!("number: {}", *n);
+    }
+
     while let Some(n) = n_lst.pop() {
         if let Some(s) = s_lst.pop() {
             assert_eq!(*n, s.parse::<u32>().unwrap());
@@ -84,5 +114,6 @@ fn mem_test() {
             panic!("none");
         }
     }
+
     debug!("mem_test done");
 }

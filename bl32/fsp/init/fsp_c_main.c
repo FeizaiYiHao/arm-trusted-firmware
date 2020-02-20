@@ -96,12 +96,8 @@ uint64_t fsp_c_main(void)
 {
     //NOTICE("FSP: %s\n", version_string);
     //NOTICE("FSP: %s\n", build_message);
-    //INFO("FSP: Total memory base : 0x%lx\n", (unsigned long) BL32_BASE);
-    //INFO("FSP: Total memory size : 0x%lx bytes\n", BL32_TOTAL_SIZE);
-	/*
-	 * Initialize a console. From plat/arm/common/tsp/arm_tsp_setup.c
-	 */
-    fsp_qemu_console_init();
+    INFO("FSP: Total memory base : 0x%lx\n", (unsigned long) BL32_BASE);
+    INFO("FSP: Total memory size : 0x%lx bytes\n", BL32_TOTAL_SIZE);
     fsp_init();
     fsp_main();
     return (uint64_t) &fsp_vector_table;

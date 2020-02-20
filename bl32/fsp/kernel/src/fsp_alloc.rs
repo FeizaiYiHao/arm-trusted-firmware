@@ -62,7 +62,7 @@ impl BHead {
     }
 
     fn as_mut_ref(&self) -> &mut BHead {
-        unsafe { &mut *(self as *const BHead as usize as *mut BHead) }
+        unsafe { &mut *(self as *const BHead as *mut BHead) }
     }
 
     fn prevfree(&self) -> usize {
@@ -132,7 +132,7 @@ impl BFHead {
     }
 
     fn as_mut_ref(&self) -> &mut BFHead {
-        unsafe { &mut *(self as *const BFHead as usize as *mut BFHead) }
+        unsafe { &mut *(self as *const BFHead as *mut BFHead) }
     }
 
     fn blink_ref(&self) -> &BFHead {
@@ -194,6 +194,7 @@ impl BFHead {
 //};
 pub struct FspAlloc {
     freelist: BFHead,
+    initialized: bool,
 }
 
 impl FspAlloc {
@@ -205,11 +206,35 @@ impl FspAlloc {
     pub const fn new() -> FspAlloc {
         FspAlloc {
             freelist: BFHead::new(),
+            initialized: false,
+        }
+    }
+
+    pub fn is_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    fn set_initialized(&self, init: bool) {
+        unsafe { (&mut *(self as *const FspAlloc as *mut FspAlloc)).initialized = init }
+    }
+
+    fn ql_size(&self) -> usize {
+        core::mem::size_of::<QLinks>()
+    }
+
+    fn size_q(&self) -> usize {
+        let qls = self.ql_size();
+        if SIZE_QUANT > qls {
+            SIZE_QUANT
+        } else {
+            qls
         }
     }
 
     // This is bpool(), but renamed to init(). Unlike the original bpool(), we're assuming that
     // this is only called once in the beginning. This must be called.
+    // &self is used instead of &mut self since a static struct cannot call a method with a mutable
+    // self.
     pub fn init(&self, buf: usize, len: usize) {
         self.freelist.init(0, 0, &self.freelist, &self.freelist);
         let len = len & !(SIZE_QUANT - 1);
@@ -259,19 +284,8 @@ impl FspAlloc {
         bn.set_prevfree(len);
         bn.set_bsize(ESENT);
         bn.set_allocated(true);
-    }
 
-    fn ql_size(&self) -> usize {
-        core::mem::size_of::<QLinks>()
-    }
-
-    fn size_q(&self) -> usize {
-        let qls = self.ql_size();
-        if SIZE_QUANT > qls {
-            SIZE_QUANT
-        } else {
-            qls
-        }
+        self.set_initialized(true);
     }
 }
 
