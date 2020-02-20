@@ -7,6 +7,4 @@ extern "C" {
         baud: u32,
         console: *const u8,
     ) -> isize;
-
-    pub fn console_set_scope(console: *const u8, scope: u32);
 }

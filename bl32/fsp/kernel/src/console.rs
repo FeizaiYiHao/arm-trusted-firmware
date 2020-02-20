@@ -21,6 +21,7 @@ unsafe impl Sync for ConsolePl011 {} // TODO: I think this means that we don't s
 
 pub struct FspConsole {
     console: ConsolePl011,
+    registered: bool,
 }
 
 impl FspConsole {
@@ -36,10 +37,11 @@ impl FspConsole {
                 },
                 base: 0,
             },
+            registered: false,
         }
     }
 
-    pub fn init(&self) {
+    pub fn init(&mut self) {
         unsafe {
             use crate::qemu_constants;
             crate::extern_c_fns::console_pl011_register(
@@ -48,11 +50,17 @@ impl FspConsole {
                 qemu_constants::PLAT_QEMU_CONSOLE_BAUDRATE,
                 &self.console as *const ConsolePl011 as *const u8,
             );
-            crate::extern_c_fns::console_set_scope(
-                &self.console.console as *const Console as *const u8,
-                qemu_constants::CONSOLE_FLAG_BOOT | qemu_constants::CONSOLE_FLAG_RUNTIME,
-            );
         }
+        self.registered = true;
+        self.console_set_scope(
+            crate::qemu_constants::CONSOLE_FLAG_BOOT | crate::qemu_constants::CONSOLE_FLAG_RUNTIME,
+        );
+    }
+
+    fn console_set_scope(&mut self, scope: u32) {
+        assert!(self.registered);
+        self.console.console.flags =
+            (self.console.console.flags & !crate::qemu_constants::CONSOLE_FLAG_SCOPE_MASK) | scope;
     }
 }
 

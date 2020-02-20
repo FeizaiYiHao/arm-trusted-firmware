@@ -20,3 +20,4 @@ pub const PLAT_QEMU_CONSOLE_BAUDRATE: u32 = 115200;
 //#define CONSOLE_FLAG_RUNTIME		(U(1) << 1)
 pub const CONSOLE_FLAG_BOOT: u32 = 1 << 0;
 pub const CONSOLE_FLAG_RUNTIME: u32 = 1 << 1;
+pub const CONSOLE_FLAG_SCOPE_MASK: u32 = (1 << 8) - 1;
