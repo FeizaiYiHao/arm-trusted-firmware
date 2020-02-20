@@ -112,7 +112,8 @@ fsp_debug_loop:
      * Jump to FSP main
      * ---------------------------------------------
      */
-    bl  fsp_c_main
+    //bl  fsp_c_main
+    bl  fsp_main
 
     /* ---------------------------------------------
      * Tell FSPD that we are done initialising

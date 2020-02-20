@@ -35,8 +35,7 @@ fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
 static mut FSP_CONSOLE: console::FspConsole = console::FspConsole::new();
 
 ///! This is the initialization function that should be called first before anything else.
-#[no_mangle]
-pub extern "C" fn fsp_init() {
+fn fsp_init() {
     unsafe {
         FSP_CONSOLE.init();
     }
@@ -54,12 +53,16 @@ pub extern "C" fn fsp_init() {
 
 ///! This is the main function.
 #[no_mangle]
-pub extern "C" fn fsp_main() {
+pub extern "C" fn fsp_main() -> *const extern_c_fns::FspVectors {
+    fsp_init();
+
     debug!("fsp main");
 
     mem_test();
 
     debug!("fsp main done");
+
+    unsafe { &extern_c_fns::fsp_vector_table as *const extern_c_fns::FspVectors }
 }
 
 fn mem_test() {
