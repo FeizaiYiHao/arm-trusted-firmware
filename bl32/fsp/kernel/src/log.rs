@@ -3,12 +3,6 @@
 
 #![macro_use]
 
-#[cfg(feature = "debug")]
-#[allow(dead_code)] // since this won't be used if debug! is not called anywhere
-extern "C" {
-    pub fn printf(fmt: *const u8, ...);
-}
-
 ///! This is used when there is no dynamic memory.
 #[macro_export]
 macro_rules! static_debug {
@@ -17,9 +11,8 @@ macro_rules! static_debug {
         {
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
             unsafe {
-                crate::log::printf(
-                    concat!("FSP DEBUG: ", $x, '\n', '\0').as_bytes().as_ptr() as *const u8
-                );
+                use core::fmt::Write;
+                writeln!(&mut crate::FSP_CONSOLE, "FSP DEBUG: {}", $x).unwrap();
             }
         }
     };
@@ -32,10 +25,10 @@ macro_rules! debug {
         #[cfg(feature = "debug")]
         {
             assert!(crate::FSP_ALLOC.is_initialized(), "Global Allocator is not initialized");
-            let s = alloc::format!("FSP DEBUG: {}{}{}", alloc::format!($($x),+), '\n', '\0');
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
             unsafe {
-                crate::log::printf(s.as_bytes().as_ptr() as *const u8);
+                use core::fmt::Write;
+                writeln!(&mut crate::FSP_CONSOLE, "FSP DEBUG: {}", alloc::format!($($x),+)).unwrap();
             }
         }
     };

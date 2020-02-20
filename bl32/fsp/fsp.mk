@@ -3,7 +3,6 @@
 #
 
 BL32_SOURCES		+=	bl32/fsp/init/fsp_c_main.c				\
-						bl32/fsp/init/fsp_qemu_console_init.c	\
 						bl32/fsp/init/fsp_plat_helpers.S		\
 						bl32/fsp/init/fsp_entrypoint.S		\
 						bl32/fsp/init/fsp_exceptions.S

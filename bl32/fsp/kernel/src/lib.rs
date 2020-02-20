@@ -7,8 +7,10 @@
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 
 mod log;
-mod console;
+mod extern_c_fns;
 mod fsp_alloc;
+mod fsp_console;
+mod qemu_constants;
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 
@@ -29,30 +31,25 @@ fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
     panic!()
 }
 
-// Copied values from include/qemu_defs.h
-// BL32_END is the end address of the BL32 image
-// FSP_SEC_MEM_BASE is the base address for the secure DRAM
-// FSP_SEC_MEM_SIZE is the size of the secure DRAM
-extern "C" {
-    pub fn get_bl32_end() -> u32;
-}
-const FSP_SEC_MEM_BASE: usize = 0x0e100000;
-const FSP_SEC_MEM_SIZE: usize = 0x00f00000; // This is 15MB.
+// TODO: Find a way to avoid static mut
+static mut FSP_CONSOLE: fsp_console::FspConsole = fsp_console::FspConsole::new();
 
 ///! This is the initialization function that should be called first before anything else.
 #[no_mangle]
 pub extern "C" fn fsp_init() {
+    unsafe {
+        FSP_CONSOLE.init();
+    }
+
     // For now, adding the whole available secure memory for dynamic allocation
-    let mut base = unsafe { get_bl32_end() as usize };
-    let mut size = FSP_SEC_MEM_SIZE;
-    if base > FSP_SEC_MEM_BASE {
-        size = FSP_SEC_MEM_SIZE - (base - FSP_SEC_MEM_BASE);
+    let mut base = unsafe { extern_c_fns::get_bl32_end() as usize };
+    let mut size = qemu_constants::SEC_DRAM_SIZE;
+    if base > qemu_constants::SEC_DRAM_BASE {
+        size = qemu_constants::SEC_DRAM_SIZE - (base - qemu_constants::SEC_DRAM_BASE);
     } else {
-        base = FSP_SEC_MEM_BASE;
+        base = qemu_constants::SEC_DRAM_BASE;
     };
     FSP_ALLOC.init(base, size);
-
-    console::fsp_console_init();
 }
 
 ///! This is the main function.
