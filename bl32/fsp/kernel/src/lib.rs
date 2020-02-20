@@ -7,9 +7,9 @@
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 
 mod log;
+mod console;
 mod extern_c_fns;
 mod fsp_alloc;
-mod fsp_console;
 mod qemu_constants;
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
@@ -32,7 +32,7 @@ fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
 }
 
 // TODO: Find a way to avoid static mut
-static mut FSP_CONSOLE: fsp_console::FspConsole = fsp_console::FspConsole::new();
+static mut FSP_CONSOLE: console::FspConsole = console::FspConsole::new();
 
 ///! This is the initialization function that should be called first before anything else.
 #[no_mangle]

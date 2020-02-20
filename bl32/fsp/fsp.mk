@@ -20,9 +20,12 @@ $(eval $(call add_define,SPIN_ON_FSP))
 
 FSP_RUST_ROOT		:=	bl32/fsp/kernel
 
-FSP_RUST_SOURCES	:=	${FSP_RUST_ROOT}/src/lib.rs				\
+FSP_RUST_SOURCES	:=	${FSP_RUST_ROOT}/src/console.rs			\
+						${FSP_RUST_ROOT}/src/extern_c_fns.rs	\
+						${FSP_RUST_ROOT}/src/fsp_alloc.rs		\
+						${FSP_RUST_ROOT}/src/lib.rs				\
 						${FSP_RUST_ROOT}/src/log.rs				\
-						${FSP_RUST_ROOT}/src/fsp_alloc.rs	\
+						${FSP_RUST_ROOT}/src/qemu_constants.rs	\
 						${FSP_RUST_ROOT}/Cargo.toml
 
 #

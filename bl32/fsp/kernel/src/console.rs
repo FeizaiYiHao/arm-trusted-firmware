@@ -1,5 +1,5 @@
 // TODO: need to check these sizes
-// A nullable pointer is an Option, since it's supposed to be represented the same way.
+// A nullable fn pointer is an Option, since it's supposed to be represented the same way.
 #[repr(C)]
 struct Console {
     next: *const Console,
@@ -15,7 +15,7 @@ unsafe impl Sync for Console {} // TODO: I think this means that we don't suppor
 #[repr(C)]
 struct ConsolePl011 {
     console: Console,
-    base: usize,
+    base: u32,
 }
 unsafe impl Sync for ConsolePl011 {} // TODO: I think this means that we don't support threads.
 
@@ -28,7 +28,7 @@ impl FspConsole {
         Self {
             console: ConsolePl011 {
                 console: Console {
-                    next: 0 as *const Console,
+                    next: core::ptr::null(),
                     flags: 0,
                     putc: None,
                     getc: None,
@@ -59,7 +59,7 @@ impl FspConsole {
 impl core::fmt::Write for FspConsole {
     fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
         if let Some(putc) = self.console.console.putc {
-            for c in s.chars() {
+            for c in s.bytes() {
                 putc(c as i32, &self.console.console as *const Console);
             }
         } else {
