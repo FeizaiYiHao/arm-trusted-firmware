@@ -14,23 +14,6 @@
 #include "../include/fsp_private.h"
 #include "../include/fsp.h"
 
-void fsp_print_debug_message(void)
-{
-    NOTICE("BL32: Debug message\n");
-}
-
-uint32_t get_bl32_end(void)
-{
-    return BL32_END;
-}
-
-/*
- * Rust's libcore calls this function but TF-A's libc doesn't have it.
- */
-int bcmp(const void *s1, const void *s2, size_t n) {
-    return strncmp((const char *) s1, (const char *) s2, n);
-}
-
 /*******************************************************************************
  * Per cpu data structure to populate parameters for an SMC in C code and use
  * a pointer to this structure in assembler code to populate x0-x7
@@ -76,22 +59,11 @@ static fsp_args_t *set_smc_args(uint64_t arg0,
 }
 
 /*******************************************************************************
- * Setup function for FSP.
- ******************************************************************************/
-void fsp_setup(void)
-{
-    /* Perform early platform-specific setup */
-    //fsp_early_platform_setup();
-
-    /* Perform late platform-specific setup */
-    //fsp_plat_arch_setup();
-}
-
-/*******************************************************************************
  * FSP main entry point where it gets the opportunity to initialize its secure
  * state/applications. Once the state is initialized, it must return to the
  * SPD with a pointer to the 'fsp_vector_table' jump table.
  ******************************************************************************/
+/*
 uint64_t fsp_c_main(void)
 {
     //NOTICE("FSP: %s\n", version_string);
@@ -102,6 +74,7 @@ uint64_t fsp_c_main(void)
     fsp_main();
     return (uint64_t) &fsp_vector_table;
 }
+*/
 
 /*******************************************************************************
  * This function performs any remaining book keeping in the test secure payload

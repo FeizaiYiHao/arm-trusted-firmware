@@ -2,10 +2,10 @@
 # Modeled after bl32/tsp/tsp.mk
 #
 
-BL32_SOURCES		+=	bl32/fsp/init/fsp_c_main.c				\
-						bl32/fsp/init/fsp_plat_helpers.S		\
+BL32_SOURCES		+=	bl32/fsp/init/fsp_c_helpers.c			\
 						bl32/fsp/init/fsp_entrypoint.S		\
-						bl32/fsp/init/fsp_exceptions.S
+						bl32/fsp/init/fsp_exceptions.S		\
+						bl32/fsp/init/fsp_plat_helpers.S	\
 
 BL32_LINKERFILE		:=	bl32/fsp/init/fsp.ld.S
 
@@ -21,7 +21,7 @@ $(eval $(call add_define,SPIN_ON_FSP))
 FSP_RUST_ROOT		:=	bl32/fsp/kernel
 
 FSP_RUST_SOURCES	:=	${FSP_RUST_ROOT}/src/console.rs			\
-						${FSP_RUST_ROOT}/src/extern_c_fns.rs	\
+						${FSP_RUST_ROOT}/src/extern_c_defs.rs	\
 						${FSP_RUST_ROOT}/src/fsp_alloc.rs		\
 						${FSP_RUST_ROOT}/src/lib.rs				\
 						${FSP_RUST_ROOT}/src/log.rs				\

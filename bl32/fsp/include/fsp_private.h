@@ -162,12 +162,6 @@ fsp_args_t *fsp_system_off_main(uint64_t arg0,
                     uint64_t arg6,
                     uint64_t arg7);
 
-uint64_t fsp_c_main(void);
-void fsp_init(void);
-void fsp_main(void);
-void fsp_print_debug_loop_message(void);
-int bcmp(const void *s1, const void *s2, size_t n);
-
 #endif /* __ASSEMBLER__ */
 
 #endif /* FSP_PRIVATE_H */

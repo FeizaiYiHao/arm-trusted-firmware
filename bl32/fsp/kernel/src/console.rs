@@ -44,7 +44,7 @@ impl FspConsole {
     pub fn init(&mut self) {
         unsafe {
             use crate::qemu_constants;
-            crate::extern_c_fns::console_pl011_register(
+            crate::extern_c_defs::console_pl011_register(
                 qemu_constants::PLAT_QEMU_BOOT_UART_BASE as *const u8,
                 qemu_constants::PLAT_QEMU_BOOT_UART_CLK_IN_HZ,
                 qemu_constants::PLAT_QEMU_CONSOLE_BAUDRATE,

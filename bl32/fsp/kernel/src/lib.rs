@@ -8,7 +8,7 @@
 
 mod log;
 mod console;
-mod extern_c_fns;
+mod extern_c_defs;
 mod fsp_alloc;
 mod qemu_constants;
 
@@ -41,7 +41,7 @@ fn fsp_init() {
     }
 
     // For now, adding the whole available secure memory for dynamic allocation
-    let mut base = unsafe { extern_c_fns::get_bl32_end() as usize };
+    let mut base = unsafe { &extern_c_defs::__BL32_END__ as *const u32 as usize };
     let mut size = qemu_constants::SEC_DRAM_SIZE;
     if base > qemu_constants::SEC_DRAM_BASE {
         size = qemu_constants::SEC_DRAM_SIZE - (base - qemu_constants::SEC_DRAM_BASE);
@@ -51,18 +51,19 @@ fn fsp_init() {
     FSP_ALLOC.init(base, size);
 }
 
-///! This is the main function.
-#[no_mangle]
-pub extern "C" fn fsp_main() -> *const extern_c_fns::FspVectors {
+///! This is the actual main function that extern_c_defs::fsp_main_wrapper() calls.
+fn fsp_main() {
     fsp_init();
 
     debug!("fsp main");
 
     mem_test();
 
+    debug!(
+        "BL32_END: {}",
+        &extern_c_defs::__BL32_END__ as *const u32 as usize
+    );
     debug!("fsp main done");
-
-    unsafe { &extern_c_fns::fsp_vector_table as *const extern_c_fns::FspVectors }
 }
 
 fn mem_test() {
