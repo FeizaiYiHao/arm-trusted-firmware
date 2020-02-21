@@ -13,10 +13,10 @@
  *      plat/common/aarch64/platform_up_stack.S for stack functions
  */
 
-#include "../include/fsp.h"
-#include "../include/fsp_private.h"
-#include "../include/qemu_defs.h"
-#include "../include/fsp_asm_macros.S"
+#include "fsp.h"
+#include "fsp_private.h"
+#include "qemu_defs.h"
+#include "fsp_asm_macros.S"
 
 
 .globl  fsp_entrypoint
@@ -134,16 +134,16 @@ endfunc fsp_entrypoint
  * -------------------------------------------
  */
 vector_base fsp_vector_table
-    b   fsp_yield_smc_entry
-    b   fsp_fast_smc_entry
-    b   fsp_cpu_on_entry
-    b   fsp_cpu_off_entry
-    b   fsp_cpu_resume_entry
-    b   fsp_cpu_suspend_entry
-    b   fsp_sel1_intr_entry
-    b   fsp_system_off_entry
-    b   fsp_system_reset_entry
-    b   fsp_abort_yield_smc_entry
+    b   yield_smc_entry
+    b   fast_smc_entry
+    b   cpu_on_entry
+    b   cpu_off_entry
+    b   cpu_resume_entry
+    b   cpu_suspend_entry
+    b   sel1_intr_entry
+    b   system_off_entry
+    b   system_reset_entry
+    b   abort_yield_smc_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when this
@@ -155,10 +155,10 @@ vector_base fsp_vector_table
  * here except for acknowledging the request.
  * ---------------------------------------------
  */
-func fsp_cpu_off_entry
-    bl  fsp_cpu_off_main
+func cpu_off_entry
+    bl  cpu_off_main_wrapper
     restore_args_call_smc
-endfunc fsp_cpu_off_entry
+endfunc cpu_off_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when the
@@ -167,10 +167,10 @@ endfunc fsp_cpu_off_entry
  * perform any necessary bookkeeping.
  * ---------------------------------------------
  */
-func fsp_system_off_entry
-    bl  fsp_system_off_main
+func system_off_entry
+    bl  system_off_main_wrapper
     restore_args_call_smc
-endfunc fsp_system_off_entry
+endfunc system_off_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when the
@@ -179,10 +179,10 @@ endfunc fsp_system_off_entry
  * perform any necessary bookkeeping.
  * ---------------------------------------------
  */
-func fsp_system_reset_entry
-    bl  fsp_system_reset_main
+func system_reset_entry
+    bl  system_reset_main_wrapper
     restore_args_call_smc
-endfunc fsp_system_reset_entry
+endfunc system_reset_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when this
@@ -195,7 +195,7 @@ endfunc fsp_system_reset_entry
  * will be aarch64 and exceptions masked.
  * ---------------------------------------------
  */
-func fsp_cpu_on_entry
+func cpu_on_entry
     /* ---------------------------------------------
      * Set the exception vector to something sane.
      * ---------------------------------------------
@@ -247,13 +247,13 @@ func fsp_cpu_on_entry
      * book keeping
      * ---------------------------------------------
      */
-    bl  fsp_cpu_on_main
+    bl  cpu_on_main_wrapper
     restore_args_call_smc
 
 /* Should never reach here */
-fsp_cpu_on_entry_panic:
-    b   fsp_cpu_on_entry_panic
-endfunc fsp_cpu_on_entry
+cpu_on_entry_panic:
+    b   cpu_on_entry_panic
+endfunc cpu_on_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when this
@@ -264,10 +264,10 @@ endfunc fsp_cpu_on_entry
  * the EL1 state.
  * ---------------------------------------------
  */
-func fsp_cpu_suspend_entry
-    bl  fsp_cpu_suspend_main
+func cpu_suspend_entry
+    bl  cpu_suspend_main_wrapper
     restore_args_call_smc
-endfunc fsp_cpu_suspend_entry
+endfunc cpu_suspend_entry
 
 /*-------------------------------------------------
  * This entrypoint is used by the FSPD to pass
@@ -292,7 +292,7 @@ endfunc fsp_cpu_suspend_entry
  *    'x0' = FSP_HANDLED_S_EL1_INTR
  * ------------------------------------------------
  */
-func    fsp_sel1_intr_entry
+func    sel1_intr_entry
 #if DEBUG
     mov_imm x2, FSP_HANDLE_SEL1_INTR_AND_RETURN
     cmp x0, x2
@@ -318,8 +318,8 @@ func    fsp_sel1_intr_entry
      * ------------------------------------------------
      */
     save_eret_context x2 x3
-    bl  fsp_update_sync_sel1_intr_stats
-    bl  fsp_common_int_handler
+    bl  update_sync_sel1_intr_stats_wrapper
+    bl  common_int_handler_wrapper
     /* Check if the S-EL1 interrupt has been handled */
     cbnz    x0, fsp_sel1_intr_check_preemption
     b   fsp_sel1_intr_return
@@ -335,8 +335,8 @@ fsp_sel1_intr_return:
 
     /* Should never reach here */
 fsp_sel1_int_entry_panic:
-    no_ret  fsp_plat_panic_handler
-endfunc fsp_sel1_intr_entry
+    no_ret  plat_panic_handler_wrapper
+endfunc sel1_intr_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD when this
@@ -348,26 +348,26 @@ endfunc fsp_sel1_intr_entry
  * acknowledging the request.
  * ---------------------------------------------
  */
-func fsp_cpu_resume_entry
-    bl  fsp_cpu_resume_main
+func cpu_resume_entry
+    bl  cpu_resume_main_wrapper
     restore_args_call_smc
 
     /* Should never reach here */
-    no_ret  fsp_plat_panic_handler
-endfunc fsp_cpu_resume_entry
+    no_ret  plat_panic_handler_wrapper
+endfunc cpu_resume_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD to ask
  * the FSP to service a fast smc request.
  * ---------------------------------------------
  */
-func fsp_fast_smc_entry
-    bl  fsp_smc_handler
+func fast_smc_entry
+    bl  smc_handler_wrapper
     restore_args_call_smc
 
     /* Should never reach here */
-    no_ret  fsp_plat_panic_handler
-endfunc fsp_fast_smc_entry
+    no_ret  plat_panic_handler_wrapper
+endfunc fast_smc_entry
 
 /*---------------------------------------------
  * This entrypoint is used by the FSPD to ask
@@ -376,15 +376,15 @@ endfunc fsp_fast_smc_entry
  * of fsp_smc_handler.
  * ---------------------------------------------
  */
-func fsp_yield_smc_entry
+func yield_smc_entry
     msr daifclr, #DAIF_FIQ_BIT | DAIF_IRQ_BIT
-    bl  fsp_smc_handler
+    bl  smc_handler_wrapper
     msr daifset, #DAIF_FIQ_BIT | DAIF_IRQ_BIT
     restore_args_call_smc
 
     /* Should never reach here */
-    no_ret  fsp_plat_panic_handler
-endfunc fsp_yield_smc_entry
+    no_ret  plat_panic_handler_wrapper
+endfunc yield_smc_entry
 
 /*---------------------------------------------------------------------
  * This entrypoint is used by the FSPD to abort a pre-empted Yielding
@@ -392,7 +392,7 @@ endfunc fsp_yield_smc_entry
  * suspend/CPU off request needs to abort the preempted SMC.
  * --------------------------------------------------------------------
  */
-func fsp_abort_yield_smc_entry
+func abort_yield_smc_entry
 
     /*
      * Exceptions masking is already done by the FSPD when entering this
@@ -405,13 +405,13 @@ func fsp_abort_yield_smc_entry
     /*
      * Allow some cleanup such as releasing locks.
      */
-    bl  fsp_abort_smc_handler
+    bl  abort_smc_handler_wrapper
 
     restore_args_call_smc
 
     /* Should never reach here */
-    bl  fsp_plat_panic_handler
-endfunc fsp_abort_yield_smc_entry
+    bl  plat_panic_handler_wrapper
+endfunc abort_yield_smc_entry
 
 /* -----------------------------------------------------------------------
  * void zeromem(void *mem, unsigned int length);

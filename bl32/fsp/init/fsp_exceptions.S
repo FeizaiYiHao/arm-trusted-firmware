@@ -8,8 +8,8 @@
  * Mostly unchanged from TF-A's bl32/tsp/aarch64/tsp_exceptions.S
  */
 
-#include "../include/fsp_asm_macros.S"
-#include "../include/fsp_private.h"
+#include "fsp_asm_macros.S"
+#include "fsp_private.h"
 
 /* ----------------------------------------------------
  * The caller-saved registers x0-x18 and LR are saved
@@ -56,7 +56,7 @@
     msr daifclr, #DAIF_ABT_BIT
 
     save_caller_regs_and_lr
-    bl  fsp_common_int_handler
+    bl  common_int_handler_wrapper
     cbz x0, interrupt_exit_\label
 
     /*

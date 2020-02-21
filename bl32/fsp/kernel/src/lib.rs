@@ -3,6 +3,7 @@
 #![no_std]
 #![feature(alloc_error_handler)] // for our own allocator implementation
 #![feature(const_fn)] // for mutable references in const fn (unstable)
+#![feature(const_in_array_repeat_expressions)] // for initializing an array with a repeated const fn
 
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 
@@ -59,10 +60,6 @@ fn fsp_main() {
 
     mem_test();
 
-    debug!(
-        "BL32_END: {}",
-        &extern_c_defs::__BL32_END__ as *const u32 as usize
-    );
     debug!("fsp main done");
 }
 

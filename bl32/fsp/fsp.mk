@@ -2,8 +2,7 @@
 # Modeled after bl32/tsp/tsp.mk
 #
 
-BL32_SOURCES		+=	bl32/fsp/init/fsp_c_helpers.c			\
-						bl32/fsp/init/fsp_entrypoint.S		\
+BL32_SOURCES		+=	bl32/fsp/init/fsp_entrypoint.S		\
 						bl32/fsp/init/fsp_exceptions.S		\
 						bl32/fsp/init/fsp_plat_helpers.S	\
 

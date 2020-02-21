@@ -18,3 +18,17 @@ pub const PLAT_QEMU_CONSOLE_BAUDRATE: u32 = 115200;
 pub const CONSOLE_FLAG_BOOT: u32 = 1 << 0;
 pub const CONSOLE_FLAG_RUNTIME: u32 = 1 << 1;
 pub const CONSOLE_FLAG_SCOPE_MASK: u32 = (1 << 8) - 1;
+
+pub const PLATFORM_MAX_CPUS_PER_CLUSTER: usize = 4;
+//pub const PLATFORM_CLUSTER_COUNT: usize = 2;
+pub const PLATFORM_CLUSTER0_CORE_COUNT: usize = PLATFORM_MAX_CPUS_PER_CLUSTER;
+pub const PLATFORM_CLUSTER1_CORE_COUNT: usize = PLATFORM_MAX_CPUS_PER_CLUSTER;
+pub const PLATFORM_CORE_COUNT: usize = PLATFORM_CLUSTER0_CORE_COUNT + PLATFORM_CLUSTER1_CORE_COUNT;
+
+/*
+///! Some data must be aligned on the biggest cache line size in the platform.
+///! This is known only to the platform as it might have a combination of
+///! integrated and external caches.
+pub const CACHE_WRITEBACK_SHIFT: u32 = 6;
+pub const CACHE_WRITEBACK_GRANULE: u32 = 1 << CACHE_WRITEBACK_SHIFT;
+*/

@@ -9,7 +9,7 @@
  */
 
 #include <lib/xlat_tables/xlat_tables_defs.h>
-#include "../include/qemu_defs.h"
+#include "qemu_defs.h"
 
 OUTPUT_FORMAT(PLATFORM_LINKER_FORMAT)
 OUTPUT_ARCH(PLATFORM_LINKER_ARCH)
