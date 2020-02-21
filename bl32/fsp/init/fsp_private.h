@@ -74,6 +74,4 @@
 #define FSP_ARG7            0x38
 #define FSP_ARGS_END        0x40
 
-#endif /* __ASSEMBLER__ */
-
 #endif /* FSP_PRIVATE_H */
