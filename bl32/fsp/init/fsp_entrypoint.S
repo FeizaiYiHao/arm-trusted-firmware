@@ -13,7 +13,7 @@
  *      plat/common/aarch64/platform_up_stack.S for stack functions
  */
 
-#include "fsp.h"
+//#include "fsp.h"
 #include "fsp_private.h"
 #include "qemu_defs.h"
 #include "fsp_asm_macros.S"

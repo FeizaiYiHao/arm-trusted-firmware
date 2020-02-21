@@ -21,6 +21,11 @@
  * scripts and assembler files.
 */
 
+#define FSP_ENTRY_DONE 0xf2000000
+#define FSP_PREEMPTED 0xf2000005
+#define FSP_HANDLED_S_EL1_INTR 0xf2000006
+#define FSP_HANDLE_SEL1_INTR_AND_RETURN 0x2004
+
 /*
  * Pulled from include/export/lib/utils_def_exp.h.
  */
@@ -47,10 +52,10 @@
 #define SCTLR_I_BIT		(ULL(1) << 12)
 #define SCTLR_DSSBS_BIT		(ULL(1) << 44)
 
-#define MPIDR_CPU_MASK      MPIDR_AFFLVL_MASK
-#define MPIDR_CLUSTER_MASK  (MPIDR_AFFLVL_MASK << MPIDR_AFFINITY_BITS)
-#define MPIDR_AFFINITY_BITS U(8)
-#define MPIDR_AFFLVL_MASK   ULL(0xff)
+//#define MPIDR_CPU_MASK      MPIDR_AFFLVL_MASK
+//#define MPIDR_CLUSTER_MASK  (MPIDR_AFFLVL_MASK << MPIDR_AFFINITY_BITS)
+//#define MPIDR_AFFINITY_BITS U(8)
+//#define MPIDR_AFFLVL_MASK   ULL(0xff)
 
 #define DAIF_FIQ_BIT		(U(1) << 0)
 #define DAIF_IRQ_BIT		(U(1) << 1)
@@ -68,99 +73,6 @@
 #define FSP_ARG6            0x30
 #define FSP_ARG7            0x38
 #define FSP_ARGS_END        0x40
-
-
-#ifndef __ASSEMBLER__
-
-#include <stdint.h>
-#include <string.h> // for using strncmp()
-
-#include "qemu_defs.h" /* For CACHE_WRITEBACK_GRANULE */
-
-#include "fsp.h"
-
-#define __aligned(x)    __attribute__((__aligned__(x)))
-
-typedef struct fsp_args {
-    uint64_t _regs[FSP_ARGS_END >> 3];
-} __aligned(CACHE_WRITEBACK_GRANULE) fsp_args_t;
-
-/* Macros to access members of the above structure using their offsets */
-#define write_sp_arg(args, offset, val) (((args)->_regs[offset >> 3])   \
-                     = val)
-
-fsp_args_t *fsp_cpu_resume_main(uint64_t max_off_pwrlvl,
-                
-                uint64_t arg1,
-                uint64_t arg2,
-                uint64_t arg3,
-                uint64_t arg4,
-                uint64_t arg5,
-                uint64_t arg6,
-                uint64_t arg7);
-fsp_args_t *fsp_cpu_suspend_main(uint64_t arg0,
-                uint64_t arg1,
-                uint64_t arg2,
-                uint64_t arg3,
-                uint64_t arg4,
-                uint64_t arg5,
-                uint64_t arg6,
-                uint64_t arg7);
-fsp_args_t *fsp_cpu_on_main(void);
-fsp_args_t *fsp_cpu_off_main(uint64_t arg0,
-                uint64_t arg1,
-                uint64_t arg2,
-                uint64_t arg3,
-                uint64_t arg4,
-                uint64_t arg5,
-                uint64_t arg6,
-                uint64_t arg7);
-
-/* S-EL1 interrupt management functions */
-void fsp_update_sync_sel1_intr_stats(uint32_t type, uint64_t elr_el3);
-
-/* Vector table of jumps */
-extern fsp_vectors_t fsp_vector_table;
-
-/* functions */
-int32_t fsp_common_int_handler(void);
-int32_t fsp_plat_panic_handler(void);
-
-fsp_args_t *fsp_abort_smc_handler(uint64_t func,
-                    uint64_t arg1,
-                    uint64_t arg2,
-                    uint64_t arg3,
-                    uint64_t arg4,
-                    uint64_t arg5,
-                    uint64_t arg6,
-                    uint64_t arg7);
-
-fsp_args_t *fsp_smc_handler(uint64_t func,
-                    uint64_t arg1,
-                    uint64_t arg2,
-                    uint64_t arg3,
-                    uint64_t arg4,
-                    uint64_t arg5,
-                    uint64_t arg6,
-                    uint64_t arg7);
-
-fsp_args_t *fsp_system_reset_main(uint64_t arg0,
-                    uint64_t arg1,
-                    uint64_t arg2,
-                    uint64_t arg3,
-                    uint64_t arg4,
-                    uint64_t arg5,
-                    uint64_t arg6,
-                    uint64_t arg7);
-
-fsp_args_t *fsp_system_off_main(uint64_t arg0,
-                    uint64_t arg1,
-                    uint64_t arg2,
-                    uint64_t arg3,
-                    uint64_t arg4,
-                    uint64_t arg5,
-                    uint64_t arg6,
-                    uint64_t arg7);
 
 #endif /* __ASSEMBLER__ */
 
