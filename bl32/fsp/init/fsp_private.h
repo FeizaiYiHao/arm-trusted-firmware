@@ -52,11 +52,6 @@
 #define SCTLR_I_BIT		(ULL(1) << 12)
 #define SCTLR_DSSBS_BIT		(ULL(1) << 44)
 
-//#define MPIDR_CPU_MASK      MPIDR_AFFLVL_MASK
-//#define MPIDR_CLUSTER_MASK  (MPIDR_AFFLVL_MASK << MPIDR_AFFINITY_BITS)
-//#define MPIDR_AFFINITY_BITS U(8)
-//#define MPIDR_AFFLVL_MASK   ULL(0xff)
-
 #define DAIF_FIQ_BIT		(U(1) << 0)
 #define DAIF_IRQ_BIT		(U(1) << 1)
 #define DAIF_ABT_BIT		(U(1) << 2)

@@ -1,3 +1,5 @@
+// TODO: This file needs some clean-up.
+
 ///! This is the main wrapper function that fsp_entrypoint.S calls.
 #[no_mangle]
 pub extern "C" fn fsp_main_wrapper() -> *const FspVectors {
@@ -49,6 +51,7 @@ pub struct FspArgs {
     regs: [u64; FSP_ARGS_END >> 3],
 }
 
+// TODO: These are currently duplicated from fsp_private.h
 /* Definitions to help the assembler access the SMC/ERET args structure */
 //pub const FSP_ARGS_SIZE: usize = 0x40;
 pub const FSP_ARG0: usize = 0x0;
@@ -108,7 +111,7 @@ extern "C" fn set_smc_args(
 ///! SMC function IDs that FSP uses to signal various forms of completions
 ///! to the secure payload dispatcher.
 //#[no_mangle]
-//pub static FSP_ENTRY_DONE: u64 = 0xf2000000; // defined in fsp_entrypoint.S
+//pub static FSP_ENTRY_DONE: u64 = 0xf2000000;
 #[no_mangle]
 pub static FSP_ON_DONE: u64 = 0xf2000001;
 #[no_mangle]
@@ -118,7 +121,7 @@ pub static FSP_SUSPEND_DONE: u64 = 0xf2000003;
 #[no_mangle]
 pub static FSP_RESUME_DONE: u64 = 0xf2000004;
 //#[no_mangle]
-//pub static FSP_PREEMPTED: u64 = 0xf2000005; // defined in fsp_entrypoint.S
+//pub static FSP_PREEMPTED: u64 = 0xf2000005;
 #[no_mangle]
 pub static FSP_ABORT_DONE: u64 = 0xf2000007;
 #[no_mangle]
@@ -126,9 +129,9 @@ pub static FSP_SYSTEM_OFF_DONE: u64 = 0xf2000008;
 #[no_mangle]
 pub static FSP_SYSTEM_RESET_DONE: u64 = 0xf2000009;
 //#[no_mangle]
-//pub static FSP_HANDLED_S_EL1_INTR: u64 = 0xf2000006; // defined in fsp_entrypoint.S
+//pub static FSP_HANDLED_S_EL1_INTR: u64 = 0xf2000006;
 //#[no_mangle]
-//pub static FSP_HANDLE_SEL1_INTR_AND_RETURN: u64 = 0x2004; // defined in fsp_entrypoint.S
+//pub static FSP_HANDLE_SEL1_INTR_AND_RETURN: u64 = 0x2004;
 
 /*******************************************************************************
  * This function performs any remaining book keeping in the test secure payload
