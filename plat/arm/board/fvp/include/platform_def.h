@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2020, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,11 +17,12 @@
 #include "../fvp_def.h"
 
 /* Required platform porting definitions */
-#define PLATFORM_CORE_COUNT \
-	(FVP_CLUSTER_COUNT * FVP_MAX_CPUS_PER_CLUSTER * FVP_MAX_PE_PER_CPU)
+#define PLATFORM_CORE_COUNT  (U(FVP_CLUSTER_COUNT) * \
+			      U(FVP_MAX_CPUS_PER_CLUSTER) * \
+			      U(FVP_MAX_PE_PER_CPU))
 
-#define PLAT_NUM_PWR_DOMAINS		(FVP_CLUSTER_COUNT + \
-					PLATFORM_CORE_COUNT) + 1
+#define PLAT_NUM_PWR_DOMAINS (U(FVP_CLUSTER_COUNT) + \
+			      PLATFORM_CORE_COUNT + U(1))
 
 #define PLAT_MAX_PWR_LVL		ARM_PWR_LVL2
 
@@ -32,7 +33,7 @@
 /*
  * Required ARM standard platform porting definitions
  */
-#define PLAT_ARM_CLUSTER_COUNT		FVP_CLUSTER_COUNT
+#define PLAT_ARM_CLUSTER_COUNT		U(FVP_CLUSTER_COUNT)
 
 #define PLAT_ARM_TRUSTED_SRAM_SIZE	UL(0x00040000)	/* 256 KB */
 
@@ -115,12 +116,18 @@
 # define PLAT_ARM_MAX_BL2_SIZE	(UL(0x11000) - FVP_BL2_ROMLIB_OPTIMIZATION)
 #endif
 
+#if RESET_TO_BL31
+/* Size of Trusted SRAM - the first 4KB of shared memory */
+#define PLAT_ARM_MAX_BL31_SIZE		(PLAT_ARM_TRUSTED_SRAM_SIZE - \
+					 ARM_SHARED_RAM_SIZE)
+#else
 /*
  * Since BL31 NOBITS overlays BL2 and BL1-RW, PLAT_ARM_MAX_BL31_SIZE is
  * calculated using the current BL31 PROGBITS debug size plus the sizes of
  * BL2 and BL1-RW
  */
 #define PLAT_ARM_MAX_BL31_SIZE		UL(0x3B000)
+#endif /* RESET_TO_BL31 */
 
 #ifndef __aarch64__
 /*
@@ -138,13 +145,13 @@
 # if TRUSTED_BOARD_BOOT
 #  define PLATFORM_STACK_SIZE		UL(0x1000)
 # else
-#  define PLATFORM_STACK_SIZE		UL(0x440)
+#  define PLATFORM_STACK_SIZE		UL(0x500)
 # endif
 #elif defined(IMAGE_BL2)
 # if TRUSTED_BOARD_BOOT
 #  define PLATFORM_STACK_SIZE		UL(0x1000)
 # else
-#  define PLATFORM_STACK_SIZE		UL(0x400)
+#  define PLATFORM_STACK_SIZE		UL(0x440)
 # endif
 #elif defined(IMAGE_BL2U)
 # define PLATFORM_STACK_SIZE		UL(0x400)

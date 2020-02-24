@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -182,6 +183,12 @@ plat_local_state_t tegra_soc_get_target_pwr_state(unsigned int lvl,
 	}
 
 	return target;
+}
+
+int32_t tegra_soc_cpu_standby(plat_local_state_t cpu_state)
+{
+	(void)cpu_state;
+	return PSCI_E_SUCCESS;
 }
 
 int tegra_soc_pwr_domain_suspend(const psci_power_state_t *target_state)
@@ -387,6 +394,15 @@ int tegra_soc_pwr_domain_power_down_wfi(const psci_power_state_t *target_state)
 			 */
 			tegra_reset_all_dma_masters();
 
+			/*
+			 * Mark PMC as accessible to the non-secure world
+			 * to allow the COP to execute System Suspend
+			 * sequence
+			 */
+			val = mmio_read_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE);
+			val &= ~PMC_SECURITY_EN_BIT;
+			mmio_write_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE, val);
+
 			/* clean up IRAM of any cruft */
 			zeromem((void *)(uintptr_t)TEGRA_IRAM_BASE,
 					TEGRA_IRAM_A_SIZE);
@@ -410,6 +426,11 @@ int tegra_soc_pwr_domain_power_down_wfi(const psci_power_state_t *target_state)
 	}
 
 	return PSCI_E_SUCCESS;
+}
+
+int32_t tegra_soc_pwr_domain_suspend_pwrdown_early(const psci_power_state_t *target_state)
+{
+	return PSCI_E_NOT_SUPPORTED;
 }
 
 int tegra_soc_pwr_domain_on_finish(const psci_power_state_t *target_state)
@@ -468,12 +489,14 @@ int tegra_soc_pwr_domain_on_finish(const psci_power_state_t *target_state)
 			tegra_bpmp_resume();
 		}
 
-		/* sc7entry-fw is part of TZDRAM area */
 		if (plat_params->sc7entry_fw_base != 0U) {
+			/* sc7entry-fw is part of TZDRAM area */
 			offset = plat_params->tzdram_base - plat_params->sc7entry_fw_base;
 			tegra_memctrl_tzdram_setup(plat_params->sc7entry_fw_base,
 				plat_params->tzdram_size + offset);
+		}
 
+		if (!tegra_chipid_is_t210_b01()) {
 			/* restrict PMC access to secure world */
 			val = mmio_read_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE);
 			val |= PMC_SECURITY_EN_BIT;
@@ -521,10 +544,11 @@ int tegra_soc_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	tegra_fc_lock_active_cluster();
 
 	/*
-         * Resume PMC hardware block for Tegra210 platforms supporting sc7entry-fw
-         */
-	if (!tegra_chipid_is_t210_b01() && (plat_params->sc7entry_fw_base != 0U))
+	 * Resume PMC hardware block for Tegra210 platforms
+	 */
+	if (!tegra_chipid_is_t210_b01()) {
 		tegra_pmc_resume();
+	}
 
 	return PSCI_E_SUCCESS;
 }
@@ -567,5 +591,16 @@ int tegra_soc_prepare_system_reset(void)
 	/* Wait 1 ms to make sure clock source/device logic is stabilized. */
 	mdelay(1);
 
+	/*
+	 * Program the PMC in order to restart the system.
+	 */
+	tegra_pmc_system_reset();
+
 	return PSCI_E_SUCCESS;
+}
+
+__dead2 void tegra_soc_prepare_system_off(void)
+{
+	ERROR("Tegra System Off: operation not handled.\n");
+	panic();
 }

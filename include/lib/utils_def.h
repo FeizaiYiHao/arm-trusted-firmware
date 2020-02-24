@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -77,6 +78,15 @@
 	_x > _y ? _x : _y;		\
 })
 
+#define CLAMP(x, min, max) __extension__ ({ \
+	__typeof__(x) _x = (x); \
+	__typeof__(min) _min = (min); \
+	__typeof__(max) _max = (max); \
+	(void)(&_x == &_min); \
+	(void)(&_x == &_max); \
+	(_x > _max ? _max : (_x < _min ? _min : _x)); \
+})
+
 /*
  * The round_up() macro rounds up a value to the given boundary in a
  * type-agnostic yet type-safe manner. The boundary must be a power of two.
@@ -147,5 +157,10 @@
 #else
 # define SPECULATION_SAFE_VALUE(var) var
 #endif
+
+/*
+ * Ticks elapsed in one second with a signal of 1 MHz
+ */
+#define MHZ_TICKS_PER_SEC	U(1000000)
 
 #endif /* UTILS_DEF_H */

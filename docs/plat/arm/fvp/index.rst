@@ -223,7 +223,7 @@ address ``0x82000000``, the firmware can be built like this:
 
 .. code:: shell
 
-    CROSS_COMPILE=aarch64-linux-gnu-  \
+    CROSS_COMPILE=aarch64-none-elf-  \
     make PLAT=fvp DEBUG=1             \
     RESET_TO_BL31=1                   \
     ARM_LINUX_KERNEL_AS_BL33=1        \
@@ -277,15 +277,15 @@ And the FVP binary can be run with the following command:
     -C cluster0.NUM_CORES=4                                     \
     -C cluster1.NUM_CORES=4                                     \
     -C cache_state_modelled=1                                   \
-    -C cluster0.cpu0.RVBAR=0x04020000                           \
-    -C cluster0.cpu1.RVBAR=0x04020000                           \
-    -C cluster0.cpu2.RVBAR=0x04020000                           \
-    -C cluster0.cpu3.RVBAR=0x04020000                           \
-    -C cluster1.cpu0.RVBAR=0x04020000                           \
-    -C cluster1.cpu1.RVBAR=0x04020000                           \
-    -C cluster1.cpu2.RVBAR=0x04020000                           \
-    -C cluster1.cpu3.RVBAR=0x04020000                           \
-    --data cluster0.cpu0="<path-to>/bl31.bin"@0x04020000        \
+    -C cluster0.cpu0.RVBAR=0x04001000                           \
+    -C cluster0.cpu1.RVBAR=0x04001000                           \
+    -C cluster0.cpu2.RVBAR=0x04001000                           \
+    -C cluster0.cpu3.RVBAR=0x04001000                           \
+    -C cluster1.cpu0.RVBAR=0x04001000                           \
+    -C cluster1.cpu1.RVBAR=0x04001000                           \
+    -C cluster1.cpu2.RVBAR=0x04001000                           \
+    -C cluster1.cpu3.RVBAR=0x04001000                           \
+    --data cluster0.cpu0="<path-to>/bl31.bin"@0x04001000        \
     --data cluster0.cpu0="<path-to>/<patched-fdt>"@0x82000000   \
     --data cluster0.cpu0="<path-to>/<kernel-binary>"@0x80080000 \
     --data cluster0.cpu0="<path-to>/<ramdisk.img>"@0x84000000

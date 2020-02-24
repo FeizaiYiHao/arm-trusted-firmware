@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,7 +16,6 @@
 #include <lib/xlat_tables/xlat_tables_compat.h>
 #include <plat/arm/common/plat_arm.h>
 #include <plat/common/platform.h>
-#include <services/spm_mm_partition.h>
 
 /* Weak definitions may be overridden in specific ARM standard platform */
 #pragma weak plat_get_ns_image_entrypoint
@@ -173,7 +172,7 @@ unsigned int plat_get_syscnt_freq2(void)
 int plat_sdei_validate_entry_point(uintptr_t ep, unsigned int client_mode)
 {
 	uint64_t par, pa;
-	uint32_t scr_el3;
+	u_register_t scr_el3;
 
 	/* Doing Non-secure address translation requires SCR_EL3.NS set */
 	scr_el3 = read_scr_el3();

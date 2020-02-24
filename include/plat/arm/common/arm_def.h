@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -18,10 +18,16 @@
  * Definitions common to all ARM standard platforms
  *****************************************************************************/
 
+/*
+ * Root of trust key hash lengths
+ */
+#define ARM_ROTPK_HEADER_LEN		19
+#define ARM_ROTPK_HASH_LEN		32
+
 /* Special value used to verify platform parameters from BL2 to BL31 */
 #define ARM_BL31_PLAT_PARAM_VAL		ULL(0x0f1e2d3c4b5a6978)
 
-#define ARM_SYSTEM_COUNT		1
+#define ARM_SYSTEM_COUNT		U(1)
 
 #define ARM_CACHE_WRITEBACK_SHIFT	6
 
@@ -223,6 +229,14 @@
 						ARM_EL3_TZC_DRAM1_SIZE,	\
 						MT_MEMORY | MT_RW | MT_SECURE)
 
+#if defined(SPD_spmd)
+#define ARM_MAP_TRUSTED_DRAM		MAP_REGION_FLAT(		    \
+						PLAT_ARM_TRUSTED_DRAM_BASE, \
+						PLAT_ARM_TRUSTED_DRAM_SIZE, \
+						MT_MEMORY | MT_RW | MT_SECURE)
+#endif
+
+
 /*
  * Mapping for the BL1 RW region. This mapping is needed by BL2 in order to
  * share the Mbed TLS heap. Since the heap is allocated inside BL1, it resides
@@ -395,13 +409,21 @@
 /*******************************************************************************
  * BL31 specific defines.
  ******************************************************************************/
-#if ARM_BL31_IN_DRAM
+#if ARM_BL31_IN_DRAM || SEPARATE_NOBITS_REGION
 /*
  * Put BL31 at the bottom of TZC secured DRAM
  */
 #define BL31_BASE			ARM_AP_TZC_DRAM1_BASE
 #define BL31_LIMIT			(ARM_AP_TZC_DRAM1_BASE +	\
 						PLAT_ARM_MAX_BL31_SIZE)
+/*
+ * For SEPARATE_NOBITS_REGION, BL31 PROGBITS are loaded in TZC secured DRAM.
+ * And BL31 NOBITS are loaded in Trusted SRAM such that BL2 is overwritten.
+ */
+#if SEPARATE_NOBITS_REGION
+#define BL31_NOBITS_BASE		BL2_BASE
+#define BL31_NOBITS_LIMIT		BL2_LIMIT
+#endif /* SEPARATE_NOBITS_REGION */
 #elif (RESET_TO_BL31)
 /* Ensure Position Independent support (PIE) is enabled for this config.*/
 # if !ENABLE_PIE
@@ -463,6 +485,12 @@
 #  define BL32_BASE			(ARM_AP_TZC_DRAM1_BASE + ULL(0x200000))
 #  define BL32_LIMIT			(ARM_AP_TZC_DRAM1_BASE +	\
 						ARM_AP_TZC_DRAM1_SIZE)
+# elif defined(SPD_spmd)
+#  define TSP_SEC_MEM_BASE		(ARM_AP_TZC_DRAM1_BASE + ULL(0x200000))
+#  define TSP_SEC_MEM_SIZE		(ARM_AP_TZC_DRAM1_SIZE - ULL(0x200000))
+#  define BL32_BASE			PLAT_ARM_TRUSTED_DRAM_BASE
+#  define BL32_LIMIT			(PLAT_ARM_TRUSTED_DRAM_BASE	\
+						+ (UL(1) << 21))
 # elif ARM_BL31_IN_DRAM
 #  define TSP_SEC_MEM_BASE		(ARM_AP_TZC_DRAM1_BASE +	\
 						PLAT_ARM_MAX_BL31_SIZE)
@@ -497,12 +525,12 @@
 
 /*
  * BL32 is mandatory in AArch32. In AArch64, undefine BL32_BASE if there is no
- * SPD and no SPM, as they are the only ones that can be used as BL32.
+ * SPD and no SPM-MM, as they are the only ones that can be used as BL32.
  */
 #if defined(__aarch64__) && !JUNO_AARCH32_EL3_RUNTIME
 # if defined(SPD_none) && !SPM_MM
 #  undef BL32_BASE
-# endif /* defined(SPD_none) && !SPM_MM*/
+# endif /* defined(SPD_none) && !SPM_MM */
 #endif /* defined(__aarch64__) && !JUNO_AARCH32_EL3_RUNTIME */
 
 /*******************************************************************************

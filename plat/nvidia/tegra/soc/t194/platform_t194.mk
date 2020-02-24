@@ -1,24 +1,18 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 # platform configs
-ENABLE_CONSOLE_SPE			:= 0
+ENABLE_CONSOLE_SPE			:= 1
 $(eval $(call add_define,ENABLE_CONSOLE_SPE))
 
-ENABLE_ROC_FOR_ORDERING_CLIENT_REQUESTS	:= 0
-$(eval $(call add_define,ENABLE_ROC_FOR_ORDERING_CLIENT_REQUESTS))
+ENABLE_STRICT_CHECKING_MODE		:= 1
+$(eval $(call add_define,ENABLE_STRICT_CHECKING_MODE))
 
-RELOCATE_TO_BL31_BASE			:= 1
-$(eval $(call add_define,RELOCATE_TO_BL31_BASE))
-
-ENABLE_CHIP_VERIFICATION_HARNESS	:= 0
-$(eval $(call add_define,ENABLE_CHIP_VERIFICATION_HARNESS))
-
-ENABLE_SMMU_DEVICE			:= 1
-$(eval $(call add_define,ENABLE_SMMU_DEVICE))
+USE_GPC_DMA				:= 1
+$(eval $(call add_define,USE_GPC_DMA))
 
 RESET_TO_BL31				:= 1
 
@@ -47,6 +41,9 @@ PLAT_INCLUDES		+=	-I${SOC_DIR}/drivers/include
 
 BL31_SOURCES		+=	drivers/ti/uart/aarch64/16550_console.S \
 				lib/cpus/aarch64/denver.S		\
+				${COMMON_DIR}/drivers/bpmp_ipc/intf.c	\
+				${COMMON_DIR}/drivers/bpmp_ipc/ivc.c	\
+				${COMMON_DIR}/drivers/gpcdma/gpcdma.c	\
 				${COMMON_DIR}/drivers/memctrl/memctrl_v2.c	\
 				${COMMON_DIR}/drivers/smmu/smmu.c	\
 				${SOC_DIR}/drivers/mce/mce.c		\

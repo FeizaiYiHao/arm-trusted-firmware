@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -34,19 +35,18 @@
 /* length of Trusty's input parameters (in bytes) */
 #define TRUSTY_PARAMS_LEN_BYTES	(4096*2)
 
-extern void memcpy16(void *dest, const void *src, unsigned int length);
-
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
  * of trusted SRAM
  ******************************************************************************/
 
 IMPORT_SYM(uint64_t, __RW_START__,	BL31_RW_START);
-IMPORT_SYM(uint64_t, __RW_END__,	BL31_RW_END);
-IMPORT_SYM(uint64_t, __RODATA_START__,	BL31_RODATA_BASE);
-IMPORT_SYM(uint64_t, __RODATA_END__,	BL31_RODATA_END);
-IMPORT_SYM(uint64_t, __TEXT_START__,	TEXT_START);
-IMPORT_SYM(uint64_t, __TEXT_END__,	TEXT_END);
+
+static const uint64_t BL31_RW_END	= BL_END;
+static const uint64_t BL31_RODATA_BASE	= BL_RO_DATA_BASE;
+static const uint64_t BL31_RODATA_END	= BL_RO_DATA_END;
+static const uint64_t TEXT_START	= BL_CODE_BASE;
+static const uint64_t TEXT_END		= BL_CODE_END;
 
 extern uint64_t tegra_bl31_phys_base;
 
@@ -62,35 +62,6 @@ static aapcs64_params_t bl32_args;
  * This variable holds the non-secure image entry address
  ******************************************************************************/
 extern uint64_t ns_image_entrypoint;
-
-/*******************************************************************************
- * The following platform setup functions are weakly defined. They
- * provide typical implementations that will be overridden by a SoC.
- ******************************************************************************/
-#pragma weak plat_early_platform_setup
-#pragma weak plat_get_bl31_params
-#pragma weak plat_get_bl31_plat_params
-#pragma weak plat_late_platform_setup
-
-void plat_early_platform_setup(void)
-{
-	; /* do nothing */
-}
-
-struct tegra_bl31_params *plat_get_bl31_params(void)
-{
-	return NULL;
-}
-
-plat_params_from_bl2_t *plat_get_bl31_plat_params(void)
-{
-	return NULL;
-}
-
-void plat_late_platform_setup(void)
-{
-	; /* do nothing */
-}
 
 /*******************************************************************************
  * Return a pointer to the 'entry_point_info' structure of the next image for
@@ -129,15 +100,12 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 {
 	struct tegra_bl31_params *arg_from_bl2 = (struct tegra_bl31_params *) arg0;
 	plat_params_from_bl2_t *plat_params = (plat_params_from_bl2_t *)arg1;
-	image_info_t bl32_img_info = { {0} };
-	uint64_t tzdram_start, tzdram_end, bl32_start, bl32_end;
 	int32_t ret;
 
 	/*
 	 * For RESET_TO_BL31 systems, BL31 is the first bootloader to run so
 	 * there's no argument to relay from a previous bootloader. Platforms
-	 * might use custom ways to get arguments, so provide handlers which
-	 * they can override.
+	 * might use custom ways to get arguments.
 	 */
 	if (arg_from_bl2 == NULL) {
 		arg_from_bl2 = plat_get_bl31_params();
@@ -192,20 +160,17 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	 * location to store the boot profiler logs. Sanity check the
 	 * address and initialise the profiler library, if it looks ok.
 	 */
-	if (plat_params->boot_profiler_shmem_base != 0ULL) {
+	ret = bl31_check_ns_address(plat_params->boot_profiler_shmem_base,
+			PROFILER_SIZE_BYTES);
+	if (ret == (int32_t)0) {
 
-		ret = bl31_check_ns_address(plat_params->boot_profiler_shmem_base,
-				PROFILER_SIZE_BYTES);
-		if (ret == (int32_t)0) {
+		/* store the membase for the profiler lib */
+		plat_bl31_params_from_bl2.boot_profiler_shmem_base =
+			plat_params->boot_profiler_shmem_base;
 
-			/* store the membase for the profiler lib */
-			plat_bl31_params_from_bl2.boot_profiler_shmem_base =
-				plat_params->boot_profiler_shmem_base;
-
-			/* initialise the profiler library */
-			boot_profiler_init(plat_params->boot_profiler_shmem_base,
-					   TEGRA_TMRUS_BASE);
-		}
+		/* initialise the profiler library */
+		boot_profiler_init(plat_params->boot_profiler_shmem_base,
+				   TEGRA_TMRUS_BASE);
 	}
 
 	/*
@@ -227,41 +192,14 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	tegra_memctrl_tzdram_setup(plat_bl31_params_from_bl2.tzdram_base,
 			(uint32_t)plat_bl31_params_from_bl2.tzdram_size);
 
+#if RELOCATE_BL32_IMAGE
 	/*
 	 * The previous bootloader might not have placed the BL32 image
-	 * inside the TZDRAM. We check the BL32 image info to find out
-	 * the base/PC values and relocate the image if necessary.
+	 * inside the TZDRAM. Platform handler to allow relocation of BL32
+	 * image to TZDRAM memory. This behavior might change per platform.
 	 */
-	if (arg_from_bl2->bl32_image_info != NULL) {
-
-		bl32_img_info = *arg_from_bl2->bl32_image_info;
-
-		/* Relocate BL32 if it resides outside of the TZDRAM */
-		tzdram_start = plat_bl31_params_from_bl2.tzdram_base;
-		tzdram_end = plat_bl31_params_from_bl2.tzdram_base +
-				plat_bl31_params_from_bl2.tzdram_size;
-		bl32_start = bl32_img_info.image_base;
-		bl32_end = bl32_img_info.image_base + bl32_img_info.image_size;
-
-		assert(tzdram_end > tzdram_start);
-		assert(bl32_end > bl32_start);
-		assert(bl32_image_ep_info.pc > tzdram_start);
-		assert(bl32_image_ep_info.pc < tzdram_end);
-
-		/* relocate BL32 */
-		if ((bl32_start >= tzdram_end) || (bl32_end <= tzdram_start)) {
-
-			INFO("Relocate BL32 to TZDRAM\n");
-
-			(void)memcpy16((void *)(uintptr_t)bl32_image_ep_info.pc,
-				 (void *)(uintptr_t)bl32_start,
-				 bl32_img_info.image_size);
-
-			/* clean up non-secure intermediate buffer */
-			zeromem((void *)(uintptr_t)bl32_start,
-				bl32_img_info.image_size);
-		}
-	}
+	plat_relocate_bl32_image(arg_from_bl2->bl32_image_info);
+#endif
 
 	/*
 	 * Add timestamp for platform early setup exit.

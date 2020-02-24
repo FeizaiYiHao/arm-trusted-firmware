@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -207,9 +207,13 @@ AS			=	$(CC) -c -x assembler-with-cpp $(TF_CFLAGS_$(ARCH))
 CPP			=	$(CC) -E $(TF_CFLAGS_$(ARCH))
 PP			=	$(CC) -E $(TF_CFLAGS_$(ARCH))
 else ifneq ($(findstring clang,$(notdir $(CC))),)
+CLANG_CCDIR		=	$(if $(filter-out ./,$(dir $(CC))),$(dir $(CC)),)
 TF_CFLAGS_aarch32	=	$(target32-directive) $(march32-directive)
 TF_CFLAGS_aarch64	=	-target aarch64-elf $(march64-directive)
-LD			=	$(LINKER)
+LD			=	$(CLANG_CCDIR)ld.lld
+ifeq (, $(shell which $(LD)))
+$(error "No $(LD) in PATH, make sure it is installed or set LD to a different linker")
+endif
 AS			=	$(CC) -c -x assembler-with-cpp $(TF_CFLAGS_$(ARCH))
 CPP			=	$(CC) -E
 PP			=	$(CC) -E
@@ -252,7 +256,7 @@ ASFLAGS_aarch64		=	$(march64-directive)
 # General warnings
 WARNINGS		:=	-Wall -Wmissing-include-dirs -Wunused	\
 				-Wdisabled-optimization	-Wvla -Wshadow	\
-				-Wno-unused-parameter
+				-Wno-unused-parameter -Wredundant-decls
 
 # Additional warnings
 # Level 1
@@ -271,7 +275,6 @@ WARNING3 += -Wcast-qual
 WARNING3 += -Wconversion
 WARNING3 += -Wpacked
 WARNING3 += -Wpointer-arith
-WARNING3 += -Wredundant-decls
 WARNING3 += -Wswitch-default
 
 ifeq (${W},1)
@@ -317,10 +320,13 @@ endif
 
 GCC_V_OUTPUT		:=	$(shell $(CC) -v 2>&1)
 
+# LD = armlink
 ifneq ($(findstring armlink,$(notdir $(LD))),)
 TF_LDFLAGS		+=	--diag_error=warning --lto_level=O1
 TF_LDFLAGS		+=	--remove --info=unused,unusedsymbols
 TF_LDFLAGS		+=	$(TF_LDFLAGS_$(ARCH))
+
+# LD = gcc (used when GCC LTO is enabled)
 else ifneq ($(findstring gcc,$(notdir $(LD))),)
 # Pass ld options with Wl or Xlinker switches
 TF_LDFLAGS		+=	-Wl,--fatal-warnings -O1
@@ -337,14 +343,20 @@ ifneq (${ERRATA_A53_843419},1)
 endif
 TF_LDFLAGS		+= 	-nostdlib
 TF_LDFLAGS		+=	$(subst --,-Xlinker --,$(TF_LDFLAGS_$(ARCH)))
+
+# LD = gcc-ld (ld) or llvm-ld (ld.lld) or other
 else
 TF_LDFLAGS		+=	--fatal-warnings -O1
 TF_LDFLAGS		+=	--gc-sections
+# ld.lld doesn't recognize the errata flags,
+# therefore don't add those in that case
+ifeq ($(findstring ld.lld,$(notdir $(LD))),)
 TF_LDFLAGS		+=	$(TF_LDFLAGS_$(ARCH))
+endif
 endif
 
 DTC_FLAGS		+=	-I dts -O dtb
-DTC_CPPFLAGS		+=	-nostdinc -Iinclude -undef -x assembler-with-cpp
+DTC_CPPFLAGS		+=	-P -nostdinc -Iinclude -Ifdts -undef -x assembler-with-cpp
 
 ################################################################################
 # Common sources and include directories
@@ -407,11 +419,20 @@ ifdef EL3_PAYLOAD_BASE
         $(warning "SPD and EL3_PAYLOAD_BASE are incompatible build options.")
         $(warning "The SPD and its BL32 companion will be present but ignored.")
 endif
-        # We expect to locate an spd.mk under the specified SPD directory
-        SPD_MAKE	:=	$(wildcard services/spd/${SPD}/${SPD}.mk)
+	ifeq (${SPD},spmd)
+		# SPMD is located in std_svc directory
+		SPD_DIR := std_svc
+	else
+		# All other SPDs in spd directory
+		SPD_DIR := spd
+	endif
+
+	# We expect to locate an spd.mk under the specified SPD directory
+	SPD_MAKE	:=	$(wildcard services/${SPD_DIR}/${SPD}/${SPD}.mk)
+
 
         ifeq (${SPD_MAKE},)
-                $(error Error: No services/spd/${SPD}/${SPD}.mk located)
+                $(error Error: No services/${SPD_DIR}/${SPD}/${SPD}.mk located)
         endif
         $(info Including ${SPD_MAKE})
         include ${SPD_MAKE}
@@ -440,18 +461,30 @@ ifeq (${ARM_ARCH_MAJOR},7)
 include make_helpers/armv7-a-cpus.mk
 endif
 
-ifeq ($(ENABLE_PIE),1)
-    TF_CFLAGS		+=	-fpie
-	ifneq ($(findstring gcc,$(notdir $(LD))),)
-		TF_LDFLAGS	+=	-Wl,-pie -Wl,--no-dynamic-linker
-	else
-		TF_LDFLAGS	+=	-pie --no-dynamic-linker
-	endif
+PIE_FOUND		:=	$(findstring --enable-default-pie,${GCC_V_OUTPUT})
+ifneq ($(PIE_FOUND),)
+	TF_CFLAGS	+=	-fno-PIE
+endif
+
+ifneq ($(findstring gcc,$(notdir $(LD))),)
+	PIE_LDFLAGS	+=	-Wl,-pie -Wl,--no-dynamic-linker
 else
-    PIE_FOUND		:=	$(findstring --enable-default-pie,${GCC_V_OUTPUT})
-    ifneq ($(PIE_FOUND),)
-        TF_CFLAGS		+=	-fno-PIE
-    endif
+	PIE_LDFLAGS	+=	-pie --no-dynamic-linker
+endif
+
+ifeq ($(ENABLE_PIE),1)
+ifeq ($(BL2_AT_EL3),1)
+ifneq ($(BL2_IN_XIP_MEM),1)
+	BL2_CFLAGS	+=	-fpie
+	BL2_LDFLAGS	+=	$(PIE_LDFLAGS)
+endif
+endif
+	BL31_CFLAGS	+=	-fpie
+	BL31_LDFLAGS	+=	$(PIE_LDFLAGS)
+ifeq ($(ARCH),aarch64)
+	BL32_CFLAGS	+=	-fpie
+	BL32_LDFLAGS	+=	$(PIE_LDFLAGS)
+endif
 endif
 
 # Include the CPU specific operations makefile, which provides default
@@ -580,6 +613,14 @@ ifeq ($(CTX_INCLUDE_MTE_REGS),1)
     endif
 endif
 
+ifeq ($(MEASURED_BOOT),1)
+    ifneq (${TRUSTED_BOARD_BOOT},1)
+        $(error MEASURED_BOOT requires TRUSTED_BOARD_BOOT=1")
+    else
+        $(info MEASURED_BOOT is an experimental feature)
+    endif
+endif
+
 ################################################################################
 # Process platform overrideable behaviour
 ################################################################################
@@ -671,6 +712,9 @@ PYTHON			?=	python3
 PRINT_MEMORY_MAP_PATH		?=	tools/memory
 PRINT_MEMORY_MAP		?=	${PRINT_MEMORY_MAP_PATH}/print_memory_map.py
 
+# Variables for use with documentation build using Sphinx tool
+DOCS_PATH		?=	docs
+
 ################################################################################
 # Include BL specific makefiles
 ################################################################################
@@ -727,6 +771,7 @@ $(eval $(call assert_boolean,GENERATE_COT))
 $(eval $(call assert_boolean,GICV2_G0_FOR_EL3))
 $(eval $(call assert_boolean,HANDLE_EA_EL3_FIRST))
 $(eval $(call assert_boolean,HW_ASSISTED_COHERENCY))
+$(eval $(call assert_boolean,MEASURED_BOOT))
 $(eval $(call assert_boolean,NS_TIMER_SWITCH))
 $(eval $(call assert_boolean,OVERRIDE_LIBC))
 $(eval $(call assert_boolean,PL011_GENERIC_UART))
@@ -742,6 +787,7 @@ $(eval $(call assert_boolean,SPM_MM))
 $(eval $(call assert_boolean,TRUSTED_BOARD_BOOT))
 $(eval $(call assert_boolean,USE_COHERENT_MEM))
 $(eval $(call assert_boolean,USE_DEBUGFS))
+$(eval $(call assert_boolean,USE_FCONF_BASED_IO))
 $(eval $(call assert_boolean,USE_ROMLIB))
 $(eval $(call assert_boolean,USE_TBBR_DEFS))
 $(eval $(call assert_boolean,WARMBOOT_ENABLE_DCACHE_EARLY))
@@ -793,6 +839,7 @@ $(eval $(call add_define,GICV2_G0_FOR_EL3))
 $(eval $(call add_define,HANDLE_EA_EL3_FIRST))
 $(eval $(call add_define,HW_ASSISTED_COHERENCY))
 $(eval $(call add_define,LOG_LEVEL))
+$(eval $(call add_define,MEASURED_BOOT))
 $(eval $(call add_define,NS_TIMER_SWITCH))
 $(eval $(call add_define,PL011_GENERIC_UART))
 $(eval $(call add_define,PLAT_${PLAT}))
@@ -809,6 +856,7 @@ $(eval $(call add_define,SPM_MM))
 $(eval $(call add_define,TRUSTED_BOARD_BOOT))
 $(eval $(call add_define,USE_COHERENT_MEM))
 $(eval $(call add_define,USE_DEBUGFS))
+$(eval $(call add_define,USE_FCONF_BASED_IO))
 $(eval $(call add_define,USE_ROMLIB))
 $(eval $(call add_define,USE_TBBR_DEFS))
 $(eval $(call add_define,WARMBOOT_ENABLE_DCACHE_EARLY))
@@ -845,7 +893,7 @@ endif
 # Build targets
 ################################################################################
 
-.PHONY:	all msg_start clean realclean distclean cscope locate-checkpatch checkcodebase checkpatch fiptool sptool fip fwu_fip certtool dtbs memmap
+.PHONY:	all msg_start clean realclean distclean cscope locate-checkpatch checkcodebase checkpatch fiptool sptool fip fwu_fip certtool dtbs memmap doc
 .SUFFIXES:
 
 all: msg_start
@@ -985,7 +1033,7 @@ certtool: ${CRTTOOL}
 
 .PHONY: ${CRTTOOL}
 ${CRTTOOL}:
-	${Q}${MAKE} PLAT=${PLAT} USE_TBBR_DEFS=${USE_TBBR_DEFS} --no-print-directory -C ${CRTTOOLPATH}
+	${Q}${MAKE} PLAT=${PLAT} USE_TBBR_DEFS=${USE_TBBR_DEFS} COT=${COT} --no-print-directory -C ${CRTTOOLPATH}
 	@${ECHO_BLANK_LINE}
 	@echo "Built $@ successfully"
 	@${ECHO_BLANK_LINE}
@@ -1043,6 +1091,10 @@ romlib.bin: libraries
 memmap: all
 	${Q}${PYTHON} $(PRINT_MEMORY_MAP) $(BUILD_PLAT)
 
+doc:
+	@echo "  BUILD DOCUMENTATION"
+	${Q}${MAKE} --no-print-directory -C ${DOCS_PATH} html
+
 cscope:
 	@echo "  CSCOPE"
 	${Q}find ${CURDIR} -name "*.[chsS]" > cscope.files
@@ -1083,6 +1135,7 @@ help:
 	@echo "  sptool         Build the Secure Partition Package creation tool"
 	@echo "  dtbs           Build the Device Tree Blobs (if required for the platform)"
 	@echo "  memmap         Print the memory map of the built binaries"
+	@echo "  doc            Build html based documentation using Sphinx tool"
 	@echo ""
 	@echo "Note: most build targets require PLAT to be set to a specific platform."
 	@echo ""

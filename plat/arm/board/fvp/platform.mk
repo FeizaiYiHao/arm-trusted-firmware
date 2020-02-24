@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -9,6 +9,11 @@ FVP_USE_GIC_DRIVER	:= FVP_GICV3
 
 # Use the SP804 timer instead of the generic one
 FVP_USE_SP804_TIMER	:= 0
+
+# Use fconf based io for FVP
+ifeq ($(BL2_AT_EL3), 0)
+USE_FCONF_BASED_IO	:= 1
+endif
 
 # Default cluster count for FVP
 FVP_CLUSTER_COUNT	:= 2
@@ -117,6 +122,8 @@ else
 					lib/cpus/aarch64/neoverse_zeus.S	\
 					lib/cpus/aarch64/cortex_hercules.S	\
 					lib/cpus/aarch64/cortex_hercules_ae.S	\
+					lib/cpus/aarch64/cortex_klein.S	        \
+					lib/cpus/aarch64/cortex_matterhorn.S	\
 					lib/cpus/aarch64/cortex_a65.S		\
 					lib/cpus/aarch64/cortex_a65ae.S
 	endif
@@ -139,7 +146,6 @@ BL1_SOURCES		+=	drivers/arm/smmu/smmu_v3.c			\
 				plat/arm/board/fvp/fvp_bl1_setup.c		\
 				plat/arm/board/fvp/fvp_err.c			\
 				plat/arm/board/fvp/fvp_io_storage.c		\
-				plat/arm/board/fvp/fvp_trusted_boot.c		\
 				${FVP_CPU_LIBS}					\
 				${FVP_INTERCONNECT_SOURCES}
 
@@ -158,7 +164,6 @@ BL2_SOURCES		+=	drivers/arm/sp805/sp805.c			\
 				plat/arm/board/fvp/fvp_bl2_setup.c		\
 				plat/arm/board/fvp/fvp_err.c			\
 				plat/arm/board/fvp/fvp_io_storage.c		\
-				plat/arm/board/fvp/fvp_trusted_boot.c		\
 				plat/arm/common/arm_nor_psci_mem_protect.c	\
 				${FVP_SECURITY_SOURCES}
 
@@ -207,18 +212,26 @@ endif
 ifdef UNIX_MK
 FVP_HW_CONFIG_DTS	:=	fdts/${FVP_DT_PREFIX}.dts
 FDT_SOURCES		+=	$(addprefix plat/arm/board/fvp/fdts/,	\
-					${PLAT}_tb_fw_config.dts	\
+					${PLAT}_fw_config.dts		\
 					${PLAT}_soc_fw_config.dts	\
 					${PLAT}_nt_fw_config.dts	\
 				)
 
-FVP_TB_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_tb_fw_config.dtb
+FVP_TB_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_fw_config.dtb
 FVP_SOC_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_soc_fw_config.dtb
 FVP_NT_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_nt_fw_config.dtb
 
 ifeq (${SPD},tspd)
 FDT_SOURCES		+=	plat/arm/board/fvp/fdts/${PLAT}_tsp_fw_config.dts
 FVP_TOS_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_tsp_fw_config.dtb
+
+# Add the TOS_FW_CONFIG to FIP and specify the same to certtool
+$(eval $(call TOOL_ADD_PAYLOAD,${FVP_TOS_FW_CONFIG},--tos-fw-config))
+endif
+
+ifeq (${SPD},spmd)
+FDT_SOURCES		+=	plat/arm/board/fvp/fdts/${PLAT}_spmc_manifest.dts
+FVP_TOS_FW_CONFIG	:=	${BUILD_PLAT}/fdts/${PLAT}_spmc_manifest.dtb
 
 # Add the TOS_FW_CONFIG to FIP and specify the same to certtool
 $(eval $(call TOOL_ADD_PAYLOAD,${FVP_TOS_FW_CONFIG},--tos-fw-config))
@@ -245,9 +258,11 @@ ENABLE_AMU			:=	1
 DYNAMIC_WORKAROUND_CVE_2018_3639	:=	1
 
 # Enable reclaiming of BL31 initialisation code for secondary cores
-# stacks for FVP.
+# stacks for FVP. However, don't enable reclaiming for clang.
 ifneq (${RESET_TO_BL31},1)
+ifeq ($(findstring clang,$(notdir $(CC))),)
 RECLAIM_INIT_CODE	:=	1
+endif
 endif
 
 ifeq (${ENABLE_AMU},1)
@@ -300,8 +315,10 @@ endif
 include plat/arm/board/common/board_common.mk
 include plat/arm/common/arm_common.mk
 
+ifeq (${TRUSTED_BOARD_BOOT}, 1)
+BL1_SOURCES		+=	plat/arm/board/fvp/fvp_trusted_boot.c
+BL2_SOURCES		+=	plat/arm/board/fvp/fvp_trusted_boot.c
 # FVP being a development platform, enable capability to disable Authentication
 # dynamically if TRUSTED_BOARD_BOOT is set.
-ifeq (${TRUSTED_BOARD_BOOT}, 1)
-        DYN_DISABLE_AUTH	:=	1
+DYN_DISABLE_AUTH	:=	1
 endif

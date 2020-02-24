@@ -19,11 +19,11 @@
 #include "socfpga_handoff.h"
 #include "socfpga_mailbox.h"
 #include "socfpga_private.h"
+#include "socfpga_reset_manager.h"
+#include "socfpga_system_manager.h"
 #include "s10_clock_manager.h"
 #include "s10_memory_controller.h"
 #include "s10_pinmux.h"
-#include "s10_reset_manager.h"
-#include "s10_system_manager.h"
 #include "wdt/watchdog.h"
 
 
@@ -45,7 +45,7 @@ const mmap_region_t plat_stratix10_mmap[] = {
 	{0},
 };
 
-boot_source_type boot_source;
+boot_source_type boot_source = BOOT_SOURCE;
 
 void bl2_el3_early_platform_setup(u_register_t x0, u_register_t x1,
 				u_register_t x2, u_register_t x4)
@@ -58,7 +58,6 @@ void bl2_el3_early_platform_setup(u_register_t x0, u_register_t x1,
 	if (socfpga_get_handoff(&reverse_handoff_ptr))
 		return;
 	config_pinmux(&reverse_handoff_ptr);
-	boot_source = reverse_handoff_ptr.boot_source;
 
 	config_clkmgr_handoff(&reverse_handoff_ptr);
 	enable_nonsecure_access();
@@ -72,6 +71,10 @@ void bl2_el3_early_platform_setup(u_register_t x0, u_register_t x1,
 
 	socfpga_delay_timer_init();
 	init_hard_memory_controller();
+	mailbox_init();
+
+	if (!intel_mailbox_is_fpga_not_ready())
+		socfpga_bridges_enable();
 }
 
 

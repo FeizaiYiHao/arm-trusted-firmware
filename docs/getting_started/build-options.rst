@@ -128,6 +128,9 @@ Common build options
    ``plat_secondary_cold_boot_setup()`` platform porting interfaces do not need
    to be implemented in this case.
 
+-  ``COT``: When Trusted Boot is enabled, selects the desired chain of trust.
+   Defaults to ``tbbr``.
+
 -  ``CRASH_REPORTING``: A non-zero value enables a console dump of processor
    register state when an unexpected exception occurs during execution of
    BL31. This option defaults to the value of ``DEBUG`` - i.e. by default
@@ -186,7 +189,7 @@ Common build options
    that is only required for the assertion and does not fit in the assertion
    itself.
 
--  ``ENABLE_BACKTRACE``: This option controls whether to enables backtrace
+-  ``ENABLE_BACKTRACE``: This option controls whether to enable backtrace
    dumps or not. It is supported in both AArch64 and AArch32. However, in
    AArch32 the format of the frame records are not defined in the AAPCS and they
    are defined by the implementation. This implementation of backtrace only
@@ -213,7 +216,7 @@ Common build options
 
 -  ``ENABLE_PIE``: Boolean option to enable Position Independent Executable(PIE)
    support within generic code in TF-A. This option is currently only supported
-   in BL31. Default is 0.
+   in BL2_AT_EL3, BL31, and BL32 (TSP). Default is 0.
 
 -  ``ENABLE_PMF``: Boolean option to enable support for optional Performance
    Measurement Framework(PMF). Default is 0.
@@ -307,8 +310,8 @@ Common build options
    EL1 for handling. The default value of this option is ``0``, which means the
    Group 0 interrupts are assumed to be handled by Secure EL1.
 
-   .. __: `platform-interrupt-controller-API.rst`
-   .. __: `interrupt-framework-design.rst`
+   .. __: platform-interrupt-controller-API.rst
+   .. __: interrupt-framework-design.rst
 
 -  ``HANDLE_EA_EL3_FIRST``: When set to ``1``, External Aborts and SError
    Interrupts will be always trapped in EL3 i.e. in BL31 at runtime. When set to
@@ -387,6 +390,11 @@ Common build options
    All log output up to and including the selected log level is compiled into
    the build. The default value is 40 in debug builds and 20 in release builds.
 
+-  ``MEASURED_BOOT``: Boolean flag to include support for the Measured Boot
+   feature. If this flag is enabled ``TRUSTED_BOARD_BOOT`` must be set.
+   This option defaults to 0 and is an experimental feature in the stage of
+   development.
+
 -  ``NON_TRUSTED_WORLD_KEY``: This option is used when ``GENERATE_COT=1``. It
    specifies the file that contains the Non-Trusted World private key in PEM
    format. If ``SAVE_KEYS=1``, this file name will be used to save the key.
@@ -460,7 +468,8 @@ Common build options
    entrypoint) or 1 (CPU reset to SP_MIN entrypoint). The default value is 0.
 
 -  ``ROT_KEY``: This option is used when ``GENERATE_COT=1``. It specifies the
-   file that contains the ROT private key in PEM format. If ``SAVE_KEYS=1``, this
+   file that contains the ROT private key in PEM format and enforces public key
+   hash generation. If ``SAVE_KEYS=1``, this
    file name will be used to save the key.
 
 -  ``SAVE_KEYS``: This option is used when ``GENERATE_COT=1``. It tells the
@@ -569,6 +578,11 @@ Common build options
    exposing a virtual filesystem interface through BL31 as a SiP SMC function.
    Default is 0.
 
+-  ``USE_FCONF_BASED_IO``: This flag determines whether to use IO based on the
+   firmware configuration framework. This allows moving the io_policies into a
+   configuration device tree, instead of static structure in the code base.
+
+
 -  ``USE_ROMLIB``: This flag determines whether library at ROM will be used.
    This feature creates a library of functions to be placed in ROM and thus
    reduces SRAM usage. Refer to :ref:`Library at ROM` for further details. Default
@@ -649,4 +663,4 @@ commands can be used:
 
 --------------
 
-*Copyright (c) 2019, Arm Limited. All rights reserved.*
+*Copyright (c) 2019-2020, Arm Limited. All rights reserved.*

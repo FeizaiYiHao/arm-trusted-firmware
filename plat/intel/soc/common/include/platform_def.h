@@ -19,8 +19,17 @@
 /* sysmgr.boot_scratch_cold4 & 5 used for CPU release address for SPL */
 #define PLAT_CPU_RELEASE_ADDR			0xffd12210
 
+/*
+ * sysmgr.boot_scratch_cold6 & 7 (64bit) are used to indicate L2 reset
+ * is done and HPS should trigger warm reset via RMR_EL3.
+ */
+#define L2_RESET_DONE_REG			0xFFD12218
+
+/* Magic word to indicate L2 reset is completed */
+#define L2_RESET_DONE_STATUS			0x1228E5E7
+
 /* Define next boot image name and offset */
-#define PLAT_NS_IMAGE_OFFSET			0x50000
+#define PLAT_NS_IMAGE_OFFSET			0x10000000
 #define PLAT_HANDOFF_OFFSET			0xFFE3F000
 
 /*******************************************************************************
@@ -48,13 +57,13 @@
 #define PLAT_MAX_PWR_LVL			1
 #define PLAT_MAX_RET_STATE			1
 #define PLAT_MAX_OFF_STATE			2
-#define PLATFORM_SYSTEM_COUNT			1
-#define PLATFORM_CLUSTER_COUNT			1
-#define PLATFORM_CLUSTER0_CORE_COUNT		4
-#define PLATFORM_CLUSTER1_CORE_COUNT		0
+#define PLATFORM_SYSTEM_COUNT			U(1)
+#define PLATFORM_CLUSTER_COUNT			U(1)
+#define PLATFORM_CLUSTER0_CORE_COUNT		U(4)
+#define PLATFORM_CLUSTER1_CORE_COUNT		U(0)
 #define PLATFORM_CORE_COUNT		(PLATFORM_CLUSTER1_CORE_COUNT + \
 					PLATFORM_CLUSTER0_CORE_COUNT)
-#define PLATFORM_MAX_CPUS_PER_CLUSTER		4
+#define PLATFORM_MAX_CPUS_PER_CLUSTER		U(4)
 
 /* Interrupt related constant */
 

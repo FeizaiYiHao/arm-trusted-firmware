@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2019, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,6 +15,10 @@
 
 #define BL31_BASE			SUNXI_SRAM_A2_BASE
 #define BL31_LIMIT			(SUNXI_SRAM_A2_BASE + SUNXI_SRAM_A2_SIZE)
+
+/* Overwrite U-Boot SPL, but reserve the first page for the SPL header. */
+#define BL31_NOBITS_BASE		(SUNXI_SRAM_A1_BASE + 0x1000)
+#define BL31_NOBITS_LIMIT		(SUNXI_SRAM_A1_BASE + SUNXI_SRAM_A1_SIZE)
 
 /* The traditional U-Boot load address is 160MB into DRAM, so at 0x4a000000 */
 #define PLAT_SUNXI_NS_IMAGE_OFFSET	(SUNXI_DRAM_BASE + (160U << 20))
@@ -36,17 +40,17 @@
 #define PLAT_MAX_OFF_STATE		U(2)
 
 #define PLAT_MAX_PWR_LVL		U(2)
-#define PLAT_NUM_PWR_DOMAINS		(1 + \
+#define PLAT_NUM_PWR_DOMAINS		(U(1) + \
 					 PLATFORM_CLUSTER_COUNT + \
 					 PLATFORM_CORE_COUNT)
 
 #define PLAT_PHY_ADDR_SPACE_SIZE	(1ULL << 32)
 #define PLAT_VIRT_ADDR_SPACE_SIZE	(1ULL << 28)
 
-#define PLATFORM_CLUSTER_COUNT		1
+#define PLATFORM_CLUSTER_COUNT		U(1)
 #define PLATFORM_CORE_COUNT		(PLATFORM_CLUSTER_COUNT * \
 					 PLATFORM_MAX_CPUS_PER_CLUSTER)
-#define PLATFORM_MAX_CPUS_PER_CLUSTER	4
+#define PLATFORM_MAX_CPUS_PER_CLUSTER	U(4)
 #define PLATFORM_MMAP_REGIONS		4
 #define PLATFORM_STACK_SIZE		(0x1000 / PLATFORM_CORE_COUNT)
 

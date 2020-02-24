@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -141,6 +142,22 @@ void plat_enable_console(int32_t id)
 }
 
 /*******************************************************************************
+ * Return pointer to the BL31 params from previous bootloader
+ ******************************************************************************/
+struct tegra_bl31_params *plat_get_bl31_params(void)
+{
+	return NULL;
+}
+
+/*******************************************************************************
+ * Return pointer to the BL31 platform params from previous bootloader
+ ******************************************************************************/
+plat_params_from_bl2_t *plat_get_bl31_plat_params(void)
+{
+	return NULL;
+}
+
+/*******************************************************************************
  * Handler for early platform setup
  ******************************************************************************/
 void plat_early_platform_setup(void)
@@ -168,6 +185,9 @@ static const interrupt_prop_t tegra210_interrupt_props[] = {
 			GICV2_INTR_GROUP0, GIC_INTR_CFG_EDGE),
 };
 
+/*******************************************************************************
+ * Handler for late platform setup
+ ******************************************************************************/
 void plat_late_platform_setup(void)
 {
 	const plat_params_from_bl2_t *plat_params = bl31_get_plat_params();
@@ -216,6 +236,13 @@ void plat_late_platform_setup(void)
 		val |= PMC_SECURITY_EN_BIT;
 		mmio_write_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE, val);
 	}
+
+	if (!tegra_chipid_is_t210_b01()) {
+		/* restrict PMC access to secure world */
+		val = mmio_read_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE);
+		val |= PMC_SECURITY_EN_BIT;
+		mmio_write_32(TEGRA_MISC_BASE + APB_SLAVE_SECURITY_ENABLE, val);
+	}
 }
 
 /*******************************************************************************
@@ -234,4 +261,22 @@ void plat_gic_setup(void)
 	 * the GICD.
 	 */
 	tegra_fc_enable_fiq_to_ccplex_routing();
+}
+/*******************************************************************************
+ * Handler to indicate support for System Suspend
+ ******************************************************************************/
+bool plat_supports_system_suspend(void)
+{
+	const plat_params_from_bl2_t *plat_params = bl31_get_plat_params();
+
+	/*
+	 * sc7entry-fw is only supported by Tegra210 SoCs.
+	 */
+	if (!tegra_chipid_is_t210_b01() && (plat_params->sc7entry_fw_base != 0U)) {
+		return true;
+	} else if (tegra_chipid_is_t210_b01()) {
+		return true;
+	} else {
+		return false;
+	}
 }

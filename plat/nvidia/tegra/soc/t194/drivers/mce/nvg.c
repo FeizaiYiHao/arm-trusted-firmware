@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,8 +15,8 @@
 #include <t194_nvg.h>
 #include <tegra_private.h>
 
-#define	ID_AFR0_EL1_CACHE_OPS_SHIFT	12
-#define	ID_AFR0_EL1_CACHE_OPS_MASK	0xFU
+#define	ID_AFR0_EL1_CACHE_OPS_SHIFT	U(12)
+#define	ID_AFR0_EL1_CACHE_OPS_MASK	U(0xF)
 /*
  * Reports the major and minor version of this interface.
  *
@@ -28,54 +28,6 @@ uint64_t nvg_get_version(void)
 	nvg_set_request((uint64_t)TEGRA_NVG_CHANNEL_VERSION);
 
 	return (uint64_t)nvg_get_result();
-}
-
-/*
- * Enable the perf per watt mode.
- *
- * NVGDATA[0]: SW(RW), 1 = enable perf per watt mode
- */
-int32_t nvg_enable_power_perf_mode(void)
-{
-	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_POWER_PERF, 1U);
-
-	return 0;
-}
-
-/*
- * Disable the perf per watt mode.
- *
- * NVGDATA[0]: SW(RW), 0 = disable perf per watt mode
- */
-int32_t nvg_disable_power_perf_mode(void)
-{
-	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_POWER_PERF, 0U);
-
-	return 0;
-}
-
-/*
- * Enable the battery saver mode.
- *
- * NVGDATA[2]: SW(RW), 1 = enable battery saver mode
- */
-int32_t nvg_enable_power_saver_modes(void)
-{
-	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_POWER_MODES, 1U);
-
-	return 0;
-}
-
-/*
- * Disable the battery saver mode.
- *
- * NVGDATA[2]: SW(RW), 0 = disable battery saver mode
- */
-int32_t nvg_disable_power_saver_modes(void)
-{
-	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_POWER_MODES, 0U);
-
-	return 0;
 }
 
 /*
@@ -165,7 +117,7 @@ int32_t nvg_online_core(uint32_t core)
 	/* sanity check the core ID value */
 	if (core > (uint32_t)PLATFORM_CORE_COUNT) {
 		ERROR("%s: unknown core id (%d)\n", __func__, core);
-		ret = EINVAL;
+		ret = -EINVAL;
 	} else {
 		/* get a core online */
 		nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_ONLINE_CORE,
@@ -183,57 +135,17 @@ int32_t nvg_online_core(uint32_t core)
  */
 int32_t nvg_update_ccplex_gsc(uint32_t gsc_idx)
 {
-	int32_t ret;
+	int32_t ret = 0;
 
 	/* sanity check GSC ID */
 	if (gsc_idx > (uint32_t)TEGRA_NVG_CHANNEL_UPDATE_GSC_VPR) {
 		ERROR("%s: unknown gsc_idx (%u)\n", __func__, gsc_idx);
-		ret = EINVAL;
+		ret = -EINVAL;
 	} else {
 		nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_UPDATE_CCPLEX_GSC,
-								(uint64_t)gsc_idx);
+				     (uint64_t)gsc_idx);
 	}
 
-	return ret;
-}
-
-/*
- * Cache clean operation for all CCPLEX caches.
- */
-int32_t nvg_roc_clean_cache(void)
-{
-	int32_t ret = 0;
-
-	/* check if cache flush through mts is supported */
-	if (((read_id_afr0_el1() >> ID_AFR0_EL1_CACHE_OPS_SHIFT) &
-			ID_AFR0_EL1_CACHE_OPS_MASK) == 1U) {
-		if (nvg_cache_clean() == 0U) {
-			ERROR("%s: failed\n", __func__);
-			ret = EINVAL;
-		}
-	} else {
-		ret = EINVAL;
-	}
-	return ret;
-}
-
-/*
- * Cache clean and invalidate operation for all CCPLEX caches.
- */
-int32_t nvg_roc_flush_cache(void)
-{
-	int32_t ret = 0;
-
-	/* check if cache flush through mts is supported */
-	if (((read_id_afr0_el1() >> ID_AFR0_EL1_CACHE_OPS_SHIFT) &
-			ID_AFR0_EL1_CACHE_OPS_MASK) == 1U) {
-		if (nvg_cache_clean_inval() == 0U) {
-			ERROR("%s: failed\n", __func__);
-			ret = EINVAL;
-		}
-	} else {
-		ret = EINVAL;
-	}
 	return ret;
 }
 
@@ -249,11 +161,12 @@ int32_t nvg_roc_clean_cache_trbits(void)
 			ID_AFR0_EL1_CACHE_OPS_MASK) == 1U) {
 		if (nvg_cache_inval_all() == 0U) {
 			ERROR("%s: failed\n", __func__);
-			ret = EINVAL;
+			ret = -ENODEV;
 		}
 	} else {
-		ret = EINVAL;
+		ret = -ENOTSUP;
 	}
+
 	return ret;
 }
 
@@ -271,8 +184,8 @@ int32_t nvg_enter_cstate(uint32_t state, uint32_t wake_time)
 	    (state != (uint32_t)TEGRA_NVG_CORE_C6) &&
 		(state != (uint32_t)TEGRA_NVG_CORE_C7))
 	{
-		ERROR("%s: unknown cstate (%d)\n", __func__, state);
-		ret = EINVAL;
+		ERROR("%s: unknown cstate (%u)\n", __func__, state);
+		ret = -EINVAL;
 	} else {
 		/* time (TSC ticks) until the core is expected to get a wake event */
 		nvg_set_wake_time(wake_time);
@@ -285,6 +198,7 @@ int32_t nvg_enter_cstate(uint32_t state, uint32_t wake_time)
 	return ret;
 }
 
+#if ENABLE_STRICT_CHECKING_MODE
 /*
  * Enable strict checking mode
  *
@@ -295,5 +209,30 @@ void nvg_enable_strict_checking_mode(void)
 	uint64_t params = (uint64_t)(STRICT_CHECKING_ENABLED_SET |
 				     STRICT_CHECKING_LOCKED_SET);
 
-	nvg_set_request_data(TEGRA_NVG_CHANNEL_SECURITY_CONFIG, params);
+	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_SECURITY_CONFIG, params);
+}
+#endif
+
+/*
+ * Request a reboot
+ *
+ * NVGDATA[0]: reboot command
+ */
+void nvg_system_reboot(void)
+{
+	/* issue command for reboot */
+	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_SHUTDOWN,
+			     (uint64_t)TEGRA_NVG_REBOOT);
+}
+
+/*
+ * Request a shutdown
+ *
+ * NVGDATA[0]: shutdown command
+ */
+void nvg_system_shutdown(void)
+{
+	/* issue command for shutdown */
+	nvg_set_request_data((uint64_t)TEGRA_NVG_CHANNEL_SHUTDOWN,
+			     (uint64_t)TEGRA_NVG_SHUTDOWN);
 }

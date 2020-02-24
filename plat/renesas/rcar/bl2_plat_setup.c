@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2020, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,6 +16,8 @@
 #include <common/debug.h>
 #include <common/desc_image_load.h>
 #include <drivers/console.h>
+#include <drivers/io/io_driver.h>
+#include <drivers/io/io_storage.h>
 #include <lib/mmio.h>
 #include <lib/xlat_tables/xlat_tables_defs.h>
 #include <plat/common/platform.h>
@@ -33,18 +35,26 @@
 #endif
 
 #include "io_common.h"
+#include "io_rcar.h"
 #include "qos_init.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
 #include "rom_api.h"
 
-IMPORT_SYM(unsigned long, __RO_START__, BL2_RO_BASE)
-IMPORT_SYM(unsigned long, __RO_END__, BL2_RO_LIMIT)
+#if RCAR_BL2_DCACHE == 1
+/*
+ * Following symbols are only used during plat_arch_setup() only
+ * when RCAR_BL2_DCACHE is enabled.
+ */
+static const uint64_t BL2_RO_BASE		= BL_CODE_BASE;
+static const uint64_t BL2_RO_LIMIT		= BL_CODE_END;
 
 #if USE_COHERENT_MEM
-IMPORT_SYM(unsigned long, __COHERENT_RAM_START__, BL2_COHERENT_RAM_BASE)
-IMPORT_SYM(unsigned long, __COHERENT_RAM_END__, BL2_COHERENT_RAM_LIMIT)
+static const uint64_t BL2_COHERENT_RAM_BASE	= BL_COHERENT_RAM_BASE;
+static const uint64_t BL2_COHERENT_RAM_LIMIT	= BL_COHERENT_RAM_END;
+#endif
+
 #endif
 
 extern void plat_rcar_gic_driver_init(void);
@@ -375,10 +385,28 @@ cold_boot:
 	return 0;
 }
 
+static uint64_t rcar_get_dest_addr_from_cert(uint32_t certid, uintptr_t *dest)
+{
+	uint32_t cert, len;
+	int ret;
+
+	ret = rcar_get_certificate(certid, &cert);
+	if (ret) {
+		ERROR("%s : cert file load error", __func__);
+		return 1;
+	}
+
+	rcar_read_certificate((uint64_t) cert, &len, dest);
+
+	return 0;
+}
+
 int bl2_plat_handle_post_image_load(unsigned int image_id)
 {
 	static bl2_to_bl31_params_mem_t *params;
 	bl_mem_params_node_t *bl_mem_params;
+	uintptr_t dest;
+	int ret;
 
 	if (!params) {
 		params = (bl2_to_bl31_params_mem_t *) PARAMS_BASE;
@@ -389,8 +417,17 @@ int bl2_plat_handle_post_image_load(unsigned int image_id)
 
 	switch (image_id) {
 	case BL31_IMAGE_ID:
+		ret = rcar_get_dest_addr_from_cert(SOC_FW_CONTENT_CERT_ID,
+						   &dest);
+		if (!ret)
+			bl_mem_params->image_info.image_base = dest;
 		break;
 	case BL32_IMAGE_ID:
+		ret = rcar_get_dest_addr_from_cert(TRUSTED_OS_FW_CONTENT_CERT_ID,
+						   &dest);
+		if (!ret)
+			bl_mem_params->image_info.image_base = dest;
+
 		memcpy(&params->bl32_ep_info, &bl_mem_params->ep_info,
 			sizeof(entry_point_info_t));
 		break;
@@ -414,6 +451,9 @@ static void bl2_populate_compatible_string(void *dt)
 	uint32_t board_rev;
 	uint32_t reg;
 	int ret;
+
+	fdt_setprop_u32(dt, 0, "#address-cells", 2);
+	fdt_setprop_u32(dt, 0, "#size-cells", 2);
 
 	/* Populate compatible string */
 	rcar_get_board_type(&board_type, &board_rev);

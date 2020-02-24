@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -91,6 +91,11 @@ ifeq (${CSS_USE_SCMI_SDS_DRIVER},1)
 BL1_SOURCES		+=	drivers/arm/css/sds/sds.c
 endif
 
+ifeq (${TRUSTED_BOARD_BOOT}, 1)
+BL1_SOURCES		+=	plat/arm/board/juno/juno_trusted_boot.c
+BL2_SOURCES		+=	plat/arm/board/juno/juno_trusted_boot.c
+endif
+
 endif
 
 ifneq (${RESET_TO_BL31},0)
@@ -151,8 +156,8 @@ else
 endif
 
 # Add the FDT_SOURCES and options for Dynamic Config
-FDT_SOURCES		+=	plat/arm/board/juno/fdts/${PLAT}_tb_fw_config.dts
-TB_FW_CONFIG		:=	${BUILD_PLAT}/fdts/${PLAT}_tb_fw_config.dtb
+FDT_SOURCES		+=	plat/arm/board/juno/fdts/${PLAT}_fw_config.dts
+TB_FW_CONFIG		:=	${BUILD_PLAT}/fdts/${PLAT}_fw_config.dtb
 
 # Add the TB_FW_CONFIG to FIP and specify the same to certtool
 $(eval $(call TOOL_ADD_PAYLOAD,${TB_FW_CONFIG},--tb-fw-config))

@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+ * Copyright (c) 2019-2020, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef __TEGRA_MC_DEF_H__
-#define __TEGRA_MC_DEF_H__
+#ifndef TEGRA_MC_DEF_H
+#define TEGRA_MC_DEF_H
 
 /*******************************************************************************
  * Memory Controller Order_id registers
@@ -18,17 +18,17 @@
 #define MC_CLIENT_ORDER_ID_27				U(0x2a6c)
 #define  MC_CLIENT_ORDER_ID_27_RESET_VAL		0x00000000U
 #define  MC_CLIENT_ORDER_ID_27_PCIE0W_MASK		(0x3U << 4)
-#define  MC_CLIENT_ORDER_ID_27_PCIE0W_ORDER_ID		(1U << 4)
+#define  MC_CLIENT_ORDER_ID_27_PCIE0W_ORDER_ID		(2U << 4)
 
 #define MC_CLIENT_ORDER_ID_28				U(0x2a70)
 #define  MC_CLIENT_ORDER_ID_28_RESET_VAL		0x00000000U
 #define  MC_CLIENT_ORDER_ID_28_PCIE4W_MASK		(0x3U << 4)
 #define  MC_CLIENT_ORDER_ID_28_PCIE4W_ORDER_ID		(3U << 4)
 #define  MC_CLIENT_ORDER_ID_28_PCIE5W_MASK		(0x3U << 12)
-#define  MC_CLIENT_ORDER_ID_28_PCIE5W_ORDER_ID		(2U << 12)
+#define  MC_CLIENT_ORDER_ID_28_PCIE5W_ORDER_ID		(1U << 12)
 
-#define mc_client_order_id(id, client) \
-	(~MC_CLIENT_ORDER_ID_##id##_##client##_MASK | \
+#define mc_client_order_id(val, id, client) \
+	((val & ~MC_CLIENT_ORDER_ID_##id##_##client##_MASK) | \
 	MC_CLIENT_ORDER_ID_##id##_##client##_ORDER_ID)
 
 /*******************************************************************************
@@ -53,8 +53,13 @@
 #define  MC_HUB_PC_VC_ID_4_NIC_VC_ID_MASK		(0x3U << 28)
 #define  MC_HUB_PC_VC_ID_4_NIC_VC_ID			(VC_NISO << 28)
 
-#define mc_hub_vc_id(id, client) \
-	(~MC_HUB_PC_VC_ID_##id##_##client##_VC_ID_MASK | \
+#define MC_HUB_PC_VC_ID_12				U(0x2aa8)
+#define  MC_HUB_PC_VC_ID_12_RESET_VAL 			0x11001011U
+#define  MC_HUB_PC_VC_ID_12_UFSHCPC2_VC_ID_MASK		(0x3U << 12)
+#define  MC_HUB_PC_VC_ID_12_UFSHCPC2_VC_ID		(VC_NISO << 12)
+
+#define mc_hub_vc_id(val, id, client) \
+	((val & ~MC_HUB_PC_VC_ID_##id##_##client##_VC_ID_MASK) | \
 	MC_HUB_PC_VC_ID_##id##_##client##_VC_ID)
 
 /*******************************************************************************
@@ -105,7 +110,7 @@
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_TSECSWRB_MASK		(1U << 7)
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_AXISW_UNORDERED 	(0U << 13)
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_AXISW_MASK		(1U << 13)
-#define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_EQOSW_ORDERED 		(1U << 15)
+#define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_EQOSW_UNORDERED 	(0U << 15)
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_EQOSW_MASK		(1U << 15)
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_UFSHCW_UNORDERED	(0U << 17)
 #define  MC_PCFIFO_CLIENT_CONFIG4_PCFIFO_UFSHCW_MASK		(1U << 17)
@@ -530,6 +535,12 @@
 #define  MC_CLIENT_HOTRESET_CTRL2_PCIE4A_FLUSH_ENB		(1U << 25)
 #define MC_CLIENT_HOTRESET_STATUS2				0x1898U
 
+#define MC_COALESCE_CTRL					0x2930U
+#define MC_COALESCE_CTRL_COALESCER_ENABLE			(1U << 31)
+#define MC_COALESCE_CONFIG_6_0					0x294cU
+#define MC_COALESCE_CONFIG_6_0_PVA0RDC_COALESCER_ENABLED	(1U << 8)
+#define MC_COALESCE_CONFIG_6_0_PVA1RDC_COALESCER_ENABLED	(1U << 14)
+
 /*******************************************************************************
  * Tegra TSA Controller constants
  ******************************************************************************/
@@ -646,5 +657,29 @@
 
 #define TSA_CONFIG_CSW_MEMTYPE_OVERRIDE_MASK			(ULL(0x3) << 11)
 #define TSA_CONFIG_CSW_MEMTYPE_OVERRIDE_PASTHRU			(ULL(0) << 11)
+#define TSA_CONFIG_CSW_SO_DEV_HUBID_MASK			(ULL(0x3) << 15)
+#define TSA_CONFIG_CSW_SO_DEV_HUB2				(ULL(2) << 15)
 
-#endif /* __TEGRA_MC_DEF_H__ */
+#define REORDER_DEPTH_LIMIT					16
+#define TSA_CONFIG_CSW_REORDER_DEPTH_LIMIT_MASK			(ULL(0x7FF) << 21)
+#define reorder_depth_limit(limit)				(ULL(limit) << 21)
+
+#define tsa_read_32(client) \
+		mmio_read_32(TEGRA_TSA_BASE + TSA_CONFIG_STATIC0_CSW_##client)
+
+#define mc_set_tsa_hub2(val, client) \
+	{ \
+		mmio_write_32(TEGRA_TSA_BASE + TSA_CONFIG_STATIC0_CSW_##client, \
+		((val & ~TSA_CONFIG_CSW_SO_DEV_HUBID_MASK) | \
+		TSA_CONFIG_CSW_SO_DEV_HUB2)); \
+	}
+
+#define mc_set_tsa_depth_limit(limit, client) \
+	{ \
+		uint32_t val = mmio_read_32(TEGRA_TSA_BASE + TSA_CONFIG_STATIC0_CSW_##client); \
+		mmio_write_32(TEGRA_TSA_BASE + TSA_CONFIG_STATIC0_CSW_##client, \
+		((val & ~TSA_CONFIG_CSW_REORDER_DEPTH_LIMIT_MASK) | \
+		reorder_depth_limit(limit))); \
+	}
+
+#endif /* TEGRA_MC_DEF_H */
