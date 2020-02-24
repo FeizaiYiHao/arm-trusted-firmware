@@ -12,17 +12,6 @@
 #ifndef QEMU_DEFS_H
 #define QEMU_DEFS_H
 
-/*
- * Platform binary types for linking from include/plat/common/common_def.h
- */
-#ifdef __aarch64__
-#define PLATFORM_LINKER_FORMAT          "elf64-littleaarch64"
-#define PLATFORM_LINKER_ARCH            aarch64
-#else
-#define PLATFORM_LINKER_FORMAT          "elf32-littlearm"
-#define PLATFORM_LINKER_ARCH            arm
-#endif /* __aarch64__ */
-
 #define PLATFORM_STACK_SIZE 0x1000
 
 /*
@@ -75,16 +64,5 @@
 #else
 # error "Unsupported BL32_RAM_LOCATION_ID value"
 #endif
-
-/*
- * FSP definitions by stevko
- */
-#define PLAT_ARM_CRASH_UART_BASE        PLAT_QEMU_CRASH_UART_BASE
-#define PLAT_ARM_CRASH_UART_CLK_IN_HZ   PLAT_QEMU_CRASH_UART_CLK_IN_HZ  
-#define ARM_CONSOLE_BAUDRATE            PLAT_QEMU_CONSOLE_BAUDRATE  
-#define FSP_SEC_MEM_BASE                BL32_MEM_BASE
-#define FSP_SEC_MEM_SIZE                BL32_MEM_SIZE
-#define PLAT_ARM_FSP_UART_BASE          PLAT_QEMU_BOOT_UART_BASE
-#define PLAT_ARM_FSP_UART_CLK_IN_HZ     PLAT_QEMU_BOOT_UART_CLK_IN_HZ
 
 #endif /* PLATFORM_DEF_H */

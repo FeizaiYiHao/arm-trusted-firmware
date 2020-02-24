@@ -11,51 +11,24 @@
 #ifndef FSP_PRIVATE_H
 #define FSP_PRIVATE_H
 
-/*
- * For those constants to be shared between C and other sources, apply a 'U',
- * 'UL', 'ULL', 'L' or 'LL' suffix to the argument only in C, to avoid
- * undefined or unintended behaviour.
- *
- * The GNU assembler and linker do not support these suffixes (it causes the
- * build process to fail) therefore the suffix is omitted when used in linker
- * scripts and assembler files.
-*/
-
 #define FSP_ENTRY_DONE 0xf2000000
 #define FSP_PREEMPTED 0xf2000005
 #define FSP_HANDLED_S_EL1_INTR 0xf2000006
 #define FSP_HANDLE_SEL1_INTR_AND_RETURN 0x2004
 
 /*
- * Pulled from include/export/lib/utils_def_exp.h.
- */
-#if defined(__ASSEMBLER__)
-# define   U(_x)    (_x)
-# define  UL(_x)    (_x)
-# define ULL(_x)    (_x)
-# define   L(_x)    (_x)
-# define  LL(_x)    (_x)
-#else
-# define   U(_x)    (_x##U)
-# define  UL(_x)    (_x##UL)
-# define ULL(_x)    (_x##ULL)
-# define   L(_x)    (_x##L)
-# define  LL(_x)    (_x##LL)
-#endif
-
-/*
  * Pulled from include/arch/aarch64/arch.h.
  */
-#define SCTLR_M_BIT		(ULL(1) << 0)
-#define SCTLR_A_BIT		(ULL(1) << 1)
-#define SCTLR_SA_BIT		(ULL(1) << 3)
-#define SCTLR_I_BIT		(ULL(1) << 12)
-#define SCTLR_DSSBS_BIT		(ULL(1) << 44)
+#define SCTLR_M_BIT		(1 << 0)
+#define SCTLR_A_BIT		(1 << 1)
+#define SCTLR_SA_BIT		(1 << 3)
+#define SCTLR_I_BIT		(1 << 12)
+#define SCTLR_DSSBS_BIT		(1 << 44)
 
-#define DAIF_FIQ_BIT		(U(1) << 0)
-#define DAIF_IRQ_BIT		(U(1) << 1)
-#define DAIF_ABT_BIT		(U(1) << 2)
-#define DAIF_DBG_BIT		(U(1) << 3)
+#define DAIF_FIQ_BIT		(1 << 0)
+#define DAIF_IRQ_BIT		(1 << 1)
+#define DAIF_ABT_BIT		(1 << 2)
+#define DAIF_DBG_BIT		(1 << 3)
 
 /* Definitions to help the assembler access the SMC/ERET args structure */
 #define FSP_ARGS_SIZE       0x40

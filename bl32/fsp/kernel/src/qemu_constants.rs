@@ -1,6 +1,8 @@
+///! Currently some definitions are in qemu_defs.h
+
 ///! Secure DRAM memory
-pub const SEC_DRAM_BASE: usize = 0x0e100000;
-pub const SEC_DRAM_SIZE: usize = 0x00f00000; // This is 15MB.
+pub const BL32_MEM_BASE: usize = 0x0e100000;
+pub const BL32_MEM_SIZE: usize = 0x00f00000; // This is 15MB.
 
 ///! QEMU PL011 console related constants
 pub const UART0_BASE: usize = 0x09000000;
@@ -24,11 +26,3 @@ pub const PLATFORM_MAX_CPUS_PER_CLUSTER: usize = 4;
 pub const PLATFORM_CLUSTER0_CORE_COUNT: usize = PLATFORM_MAX_CPUS_PER_CLUSTER;
 pub const PLATFORM_CLUSTER1_CORE_COUNT: usize = PLATFORM_MAX_CPUS_PER_CLUSTER;
 pub const PLATFORM_CORE_COUNT: usize = PLATFORM_CLUSTER0_CORE_COUNT + PLATFORM_CLUSTER1_CORE_COUNT;
-
-/*
-///! Some data must be aligned on the biggest cache line size in the platform.
-///! This is known only to the platform as it might have a combination of
-///! integrated and external caches.
-pub const CACHE_WRITEBACK_SHIFT: u32 = 6;
-pub const CACHE_WRITEBACK_GRANULE: u32 = 1 << CACHE_WRITEBACK_SHIFT;
-*/

@@ -11,13 +11,13 @@
 #include <lib/xlat_tables/xlat_tables_defs.h>
 #include "qemu_defs.h"
 
-OUTPUT_FORMAT(PLATFORM_LINKER_FORMAT)
-OUTPUT_ARCH(PLATFORM_LINKER_ARCH)
+OUTPUT_FORMAT("elf64-littleaarch64") // only supporting aarch64
+OUTPUT_ARCH(aarch64) // only supporting aarch64
 ENTRY(fsp_entrypoint)
 
 
 MEMORY {
-    RAM (rwx): ORIGIN = FSP_SEC_MEM_BASE, LENGTH = FSP_SEC_MEM_SIZE
+    RAM (rwx): ORIGIN = BL32_MEM_BASE, LENGTH = BL32_MEM_SIZE
 }
 
 

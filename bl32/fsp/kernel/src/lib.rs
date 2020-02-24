@@ -43,11 +43,11 @@ fn fsp_init() {
 
     // For now, adding the whole available secure memory for dynamic allocation
     let mut base = unsafe { &extern_c_defs::__BL32_END__ as *const u32 as usize };
-    let mut size = qemu_constants::SEC_DRAM_SIZE;
-    if base > qemu_constants::SEC_DRAM_BASE {
-        size = qemu_constants::SEC_DRAM_SIZE - (base - qemu_constants::SEC_DRAM_BASE);
+    let mut size = qemu_constants::BL32_MEM_SIZE;
+    if base > qemu_constants::BL32_MEM_BASE {
+        size = qemu_constants::BL32_MEM_SIZE - (base - qemu_constants::BL32_MEM_BASE);
     } else {
-        base = qemu_constants::SEC_DRAM_BASE;
+        base = qemu_constants::BL32_MEM_BASE;
     };
     FSP_ALLOC.init(base, size);
 }
