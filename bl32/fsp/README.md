@@ -79,31 +79,23 @@ $ git clone https://github.com/ARMmbed/mbedtls.git -b mbedtls-2.16.2 --depth=1
 
 It will create `mbedtls` directory.
 
-## Getting a Normal Boot Loader
+## Getting Linux
 
-TF-A requires a normal boot loader at compile time. We will use U-Boot for now. We could use
-[`QEMU_EFI.fd`](http://snapshots.linaro.org/components/kernel/leg-virt-tianocore-edk2-upstream/latest/QEMU-KERNEL-AARCH64/RELEASE_GCC5/)
-instead, and we might in the future. To get U-Boot, do the following.
+TF-A can directly boot Linux 5.5 on QEMU. To get it, do the following.
 
 ```
-$ git clone https://github.com/ARM-software/u-boot.git --depth=1
+$ git clone https://github.com/torvalds/linux.git --depth=1 -b v5.5
 ```
 
 Then we need to compile it.
 
 ```
-$ cd u-boot
-$ make qemu_arm64_defconfig
-$ make
+$ cd linux
+$ ARCH=arm64 make defconfig
+$ ARCH=arm64 make -j4
 ```
 
-You can test if it compiled correctly by:
-
-```
-$ qemu-system-aarch64 -nographic -machine virt -cpu cortex-a57 -bios u-boot.bin
-```
-
-Check if U-Boot boots up and `pkill` it. After that, go back to the parent directory `~/dev`.
+After that, go back to the parent directory `~/dev`.
 
 ## Getting Rust
 
@@ -163,7 +155,7 @@ $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/bl1.bin ./bin/
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/bl2.bin ./bin/
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/bl31.bin ./bin/
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/bl32.bin ./bin/
-$ ln -s ~/dev/u-boot/u-boot.bin ./bin/bl33.bin
+$ ln -s ~/dev/linux/arch/arm64/boot/Image ./bin/bl33.bin
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/nt_fw_content.crt ./bin/
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/nt_fw_key.crt ./bin/
 $ ln -s ~/dev/arm-trusted-firmware/build/qemu/debug/soc_fw_content.crt ./bin/
@@ -180,7 +172,7 @@ We use TF-A's build system to compile FSP. To compile FSP with TF-A, do the foll
 
 ```
 $ cd arm-trusted-firmware
-$ make PLAT=qemu MBEDTLS_DIR=~/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=50 BL33=~/dev/bin/bl33.bin SPD=fspd all certificates
+$ make PLAT=qemu MBEDTLS_DIR=~/dev/mbedtls TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 DEBUG=1 LOG_LEVEL=50 ARM_LINUX_KERNEL_AS_BL33=1 BL33=~/dev/bin/bl33.bin SPD=fspd all certificates
 ```
 
 To test if it is built correctly, do the following.
@@ -190,8 +182,8 @@ $ cd ../bin
 $ qemu-system-aarch64 -nographic -smp 1 -s -machine virt,secure=on -cpu cortex-a57 -d unimp -semihosting-config enable,target=native -m 1057 -bios bl1.bin
 ```
 
-It will hang, but if it shows the messages similar to the following, it means the build was
-successful. These log messages are printed out by FSP.
+It will panic at the end, but it will run both FSP's test and also Linux. Before it boots up Linux,
+it will show something like the following.
 
 ```
 INFO: BL31: Initializing BL32
