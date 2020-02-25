@@ -134,7 +134,7 @@ is because we're using `![no_std]` and running on bare metal hardware. `softfloa
 disabling floating point and SIMD registers. Enabling those registers does not work as it is
 prevented by TF-A.  `aarch64-unknown-none-softfloat` is a [tier-3
 target](https://forge.rust-lang.org/release/platform-support.html).  Because of that, we need to be
-aware that it may cause a problem.
+aware that it may cause problems.
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
 

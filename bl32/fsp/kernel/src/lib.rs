@@ -1,4 +1,8 @@
-//! This has a main entry function fsp_main().
+//! Since we're creating a library, this is the main file from Rust's point of view.
+//! However, our actual main file is entrypoints.rs.
+//!
+//! This file mostly contains all asm-facing definitions and functions, as well as Rust
+//! initialization.
 
 #![no_std]
 #![feature(alloc_error_handler)] // for our own allocator implementation
@@ -9,109 +13,312 @@
 
 mod log;
 mod console;
-mod extern_c_defs;
+mod entrypoints;
 mod fsp_alloc;
 mod qemu_constants;
 
-extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
+///! SMC function IDs that FSP uses to signal various forms of completions
+///! to the secure payload dispatcher.
+//#[no_mangle]
+//pub static FSP_ENTRY_DONE: u64 = 0xf2000000; // currently only used by asm
+#[no_mangle]
+pub static FSP_ON_DONE: u64 = 0xf2000001;
+#[no_mangle]
+pub static FSP_OFF_DONE: u64 = 0xf2000002;
+#[no_mangle]
+pub static FSP_SUSPEND_DONE: u64 = 0xf2000003;
+#[no_mangle]
+pub static FSP_RESUME_DONE: u64 = 0xf2000004;
+#[no_mangle]
+pub static FSP_PREEMPTED: u64 = 0xf2000005;
+#[no_mangle]
+pub static FSP_ABORT_DONE: u64 = 0xf2000007;
+#[no_mangle]
+pub static FSP_SYSTEM_OFF_DONE: u64 = 0xf2000008;
+#[no_mangle]
+pub static FSP_SYSTEM_RESET_DONE: u64 = 0xf2000009;
+//#[no_mangle]
+//pub static FSP_HANDLED_S_EL1_INTR: u64 = 0xf2000006; // currently only used by asm
+//#[no_mangle]
+//pub static FSP_HANDLE_SEL1_INTR_AND_RETURN: u64 = 0x2004; // currently only used by asm
 
-use core::panic::PanicInfo;
+///! Definitions to help the assembler access the SMC/ERET args structure
+// TODO: These are currently duplicated from fsp_private.h
+//pub const FSP_ARGS_SIZE: usize = 0x40; // currently only used by asm
+pub const FSP_ARG0: usize = 0x0;
+pub const FSP_ARG1: usize = 0x8;
+pub const FSP_ARG2: usize = 0x10;
+pub const FSP_ARG3: usize = 0x18;
+pub const FSP_ARG4: usize = 0x20;
+pub const FSP_ARG5: usize = 0x28;
+pub const FSP_ARG6: usize = 0x30;
+pub const FSP_ARG7: usize = 0x38;
+pub const FSP_ARGS_END: usize = 0x40;
 
-/// This function is called on panic.
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    static_debug!("Panic");
-    loop {}
+#[repr(C)]
+pub struct FspVectors {
+    yield_smc_entry: u32,
+    fast_smc_entry: u32,
+    cpu_on_entry: u32,
+    cpu_off_entry: u32,
+    cpu_resume_entry: u32,
+    cpu_suspend_entry: u32,
+    sel1_intr_entry: u32,
+    system_off_entry: u32,
+    system_reset_entry: u32,
+    abort_yield_smc_entry: u32,
 }
 
-#[global_allocator]
-pub static FSP_ALLOC: fsp_alloc::FspAlloc = fsp_alloc::FspAlloc::new();
+///! Per cpu data structure to populate parameters for an SMC in C code and use
+///! a pointer to this structure in assembler code to populate x0-x7
+// TODO: avoid static mut (unstable)
+static mut FSP_SMC_ARGS: [FspArgs; crate::qemu_constants::PLATFORM_CORE_COUNT] =
+    [FspArgs::new(); crate::qemu_constants::PLATFORM_CORE_COUNT];
 
-#[alloc_error_handler]
-fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
-    panic!()
+// It should be the following, but Rust doesn't allow a const in align yet.
+//#[repr(C, align(crate::qemu_constants::CACHE_WRITEBACK_GRANULE))]
+#[repr(C, align(64))]
+pub struct FspArgs {
+    regs: [u64; FSP_ARGS_END >> 3],
 }
 
-// TODO: Find a way to avoid static mut
-static mut FSP_CONSOLE: console::FspConsole = console::FspConsole::new();
-
-///! This is the initialization function that should be called first before anything else.
-fn fsp_init() {
-    unsafe {
-        FSP_CONSOLE.init();
-    }
-
-    // For now, adding the whole available secure memory for dynamic allocation
-    let mut base = unsafe { &extern_c_defs::__BL32_END__ as *const u32 as usize };
-    let mut size = qemu_constants::BL32_MEM_SIZE;
-    if base > qemu_constants::BL32_MEM_BASE {
-        size = qemu_constants::BL32_MEM_SIZE - (base - qemu_constants::BL32_MEM_BASE);
-    } else {
-        base = qemu_constants::BL32_MEM_BASE;
-    };
-    FSP_ALLOC.init(base, size);
-}
-
-///! This is the actual main function that extern_c_defs::fsp_main_wrapper() calls.
-fn fsp_main() {
-    fsp_init();
-
-    debug!("fsp main");
-
-    mem_test();
-
-    debug!("fsp main done");
-}
-
-fn mem_test() {
-    use alloc::boxed::Box;
-    use alloc::string::String;
-    use alloc::string::ToString;
-    use alloc::vec::Vec;
-
-    let mut n_lst: Vec<Box<u32>> = Vec::new();
-    let mut s_lst: Vec<String> = Vec::new();
-    debug!("mem_test inserting");
-    for number in 0..10000 {
-        let x = Box::<u32>::new(number);
-        n_lst.push(x);
-        s_lst.push(number.to_string());
-    }
-
-    for number in 0..5000 {
-        if let Some(n) = n_lst.pop() {
-            if let Some(s) = s_lst.pop() {
-                assert_eq!(*n, s.parse::<u32>().unwrap());
-                debug!("number: {}", *n);
-            } else {
-                panic!("none");
-            }
-        } else {
-            panic!("none");
-        }
-        let x = Box::<u32>::new(number);
-        n_lst.insert(number as usize, x);
-        s_lst.insert(number as usize, number.to_string());
-    }
-
-    for number in 0..5000 {
-        let x = Box::<u32>::new(number);
-        n_lst.push(x);
-        s_lst.push(number.to_string());
-        let n = n_lst.remove((number * 2) as usize);
-        let s = s_lst.remove((number * 2) as usize);
-        assert_eq!(*n, s.parse::<u32>().unwrap());
-        debug!("number: {}", *n);
-    }
-
-    while let Some(n) = n_lst.pop() {
-        if let Some(s) = s_lst.pop() {
-            assert_eq!(*n, s.parse::<u32>().unwrap());
-            debug!("number: {}", *n);
-        } else {
-            panic!("none");
+impl FspArgs {
+    const fn new() -> FspArgs {
+        FspArgs {
+            regs: [0; FSP_ARGS_END >> 3],
         }
     }
+}
 
-    debug!("mem_test done");
+///! This is the main wrapper function that fsp_entrypoint.S calls.
+#[no_mangle]
+pub extern "C" fn fsp_main_wrapper() -> *const FspVectors {
+    entrypoints::fsp_main();
+
+    unsafe { &fsp_vector_table as *const FspVectors }
+}
+
+fn write_sp_arg(args: &mut FspArgs, offset: usize, val: u64) {
+    args.regs[offset >> 3] = val;
+}
+
+#[no_mangle]
+extern "C" fn set_smc_args(
+    arg0: u64,
+    arg1: u64,
+    arg2: u64,
+    arg3: u64,
+    arg4: u64,
+    arg5: u64,
+    arg6: u64,
+    arg7: u64,
+) -> &'static FspArgs {
+    let linear_id: u32 = unsafe { plat_my_core_pos() }; // TODO: should call plat_my_core_pos(), i.e., no SMP for now
+    let pcpu_smc_args: &mut FspArgs = unsafe { &mut FSP_SMC_ARGS[linear_id as usize] };
+    write_sp_arg(pcpu_smc_args, FSP_ARG0, arg0);
+    write_sp_arg(pcpu_smc_args, FSP_ARG1, arg1);
+    write_sp_arg(pcpu_smc_args, FSP_ARG2, arg2);
+    write_sp_arg(pcpu_smc_args, FSP_ARG3, arg3);
+    write_sp_arg(pcpu_smc_args, FSP_ARG4, arg4);
+    write_sp_arg(pcpu_smc_args, FSP_ARG5, arg5);
+    write_sp_arg(pcpu_smc_args, FSP_ARG6, arg6);
+    write_sp_arg(pcpu_smc_args, FSP_ARG7, arg7);
+
+    pcpu_smc_args
+}
+
+///! This function performs any remaining book keeping in the test secure payload
+///! after this cpu's architectural state has been setup in response to an earlier
+///! psci cpu_on request.
+#[no_mangle]
+pub extern "C" fn cpu_on_main_wrapper() -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed turned ourselves on */
+    set_smc_args(FSP_ON_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function performs any remaining book keeping in the test secure payload
+///! before this cpu is turned off in response to a psci cpu_off request.
+#[no_mangle]
+pub extern "C" fn cpu_off_main_wrapper(
+    _arg0: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(FSP_OFF_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function performs any book keeping in the test secure payload before
+///! this cpu's architectural state is saved in response to an earlier psci
+///! cpu_suspend request.
+#[no_mangle]
+pub extern "C" fn cpu_suspend_main_wrapper(
+    _arg0: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(FSP_SUSPEND_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function performs any book keeping in the test secure payload after this
+///! cpu's architectural state has been restored after wakeup from an earlier psci
+///! cpu_suspend request.
+#[no_mangle]
+pub extern "C" fn cpu_resume_main_wrapper(
+    _max_off_pwrlvl: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(FSP_RESUME_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function performs any remaining bookkeeping in the test secure payload
+///! before the system is switched off (in response to a psci SYSTEM_OFF request)
+#[no_mangle]
+pub extern "C" fn system_off_main_wrapper(
+    _arg0: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(FSP_SYSTEM_OFF_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function performs any remaining bookkeeping in the test secure payload
+///! before the system is reset (in response to a psci SYSTEM_RESET request)
+#[no_mangle]
+pub extern "C" fn system_reset_main_wrapper(
+    _arg0: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(FSP_SYSTEM_RESET_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! FSP fast smc handler. The secure monitor jumps to this function by
+///! doing the ERET after populating X0-X7 registers. The arguments are received
+///! in the function arguments in order. Once the service is rendered, this
+///! function returns to Secure Monitor by raising SMC.
+#[no_mangle]
+pub extern "C" fn smc_handler_wrapper(
+    func: u64,
+    arg1: u64,
+    arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    /* Indicate to the SPD that we have completed this request */
+    set_smc_args(func, 0, arg1, arg2, 0, 0, 0, 0)
+}
+
+///! FSP smc abort handler. This function is called when aborting a preempted
+///! yielding SMC request. It should cleanup all resources owned by the SMC
+///! handler such as locks or dynamically allocated memory so following SMC
+///! request are executed in a clean environment.
+#[no_mangle]
+pub extern "C" fn abort_smc_handler_wrapper(
+    _func: u64,
+    _arg1: u64,
+    _arg2: u64,
+    _arg3: u64,
+    _arg4: u64,
+    _arg5: u64,
+    _arg6: u64,
+    _arg7: u64,
+) -> &'static FspArgs {
+    set_smc_args(FSP_ABORT_DONE, 0, 0, 0, 0, 0, 0, 0)
+}
+
+///! This function updates the FSP statistics for S-EL1 interrupts handled
+///! synchronously i.e the ones that have been handed over by the FSPD. It also
+///! keeps count of the number of times control was passed back to the FSPD
+///! after handling the interrupt. In the future it will be possible that the
+///! FSPD hands over an S-EL1 interrupt to the FSP but does not expect it to
+///! return execution. This statistic will be useful to distinguish between these
+///! two models of synchronous S-EL1 interrupt handling. The 'elr_el3' parameter
+///! contains the address of the instruction in normal world where this S-EL1
+///! interrupt was generated.
+#[no_mangle]
+pub extern "C" fn update_sync_sel1_intr_stats_wrapper(_t: u32, _elr_el3: u64) {}
+
+///! This function is invoked when a non S-EL1 interrupt is received and causes
+///! the preemption of FSP. This function returns FSP_PREEMPTED and results
+///! in the control being handed over to EL3 for handling the interrupt.
+#[no_mangle]
+pub extern "C" fn handle_preemption() -> i32 {
+    return FSP_PREEMPTED as i32;
+}
+
+///! common_int_handler is called as a part of both synchronous and
+///! asynchronous handling of FSP interrupts. Currently the physical timer
+///! interrupt is the only S-EL1 interrupt that this handler expects. It returns
+///! 0 upon successfully handling the expected interrupt and all other
+///! interrupts are treated as normal world or EL3 interrupts.
+#[no_mangle]
+pub extern "C" fn common_int_handler_wrapper() -> i32 {
+    0
+}
+
+///! panic_handler for the assembly
+#[no_mangle]
+pub extern "C" fn plat_panic_handler_wrapper() -> ! {
+    panic!("plat_panic_handler");
+}
+
+extern "C" {
+    fn console_pl011_register(
+        baseaddr: *const u8,
+        clock: u32,
+        baud: u32,
+        console: *const u8,
+    ) -> isize;
+
+    static __BL32_END__: u32; // This is a linker symbol, so its reference is the correct value.
+
+    fn strncmp(s1: *const u8, s2: *const u8, n: u32) -> u32;
+
+    static fsp_vector_table: FspVectors;
+
+    fn plat_my_core_pos() -> u32;
+}
+
+pub fn bl32_end() -> usize {
+    unsafe { &__BL32_END__ as *const u32 as usize }
+}
+
+// Rust's libcore calls this function but TF-A's libc doesn't have it.
+#[no_mangle]
+pub extern "C" fn bcmp(s1: *const u8, s2: *const u8, n: u32) -> u32 {
+    unsafe { strncmp(s1, s2, n) }
 }

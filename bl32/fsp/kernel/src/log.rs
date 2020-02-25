@@ -12,7 +12,7 @@ macro_rules! static_debug {
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
             unsafe {
                 use core::fmt::Write;
-                writeln!(&mut crate::FSP_CONSOLE, "FSP DEBUG: {}", $x).unwrap();
+                writeln!(&mut crate::entrypoints::FSP_CONSOLE, "FSP DEBUG: {}", $x).unwrap();
             }
         }
     };
@@ -24,11 +24,11 @@ macro_rules! debug {
     ( $($x:expr),+ ) => {
         #[cfg(feature = "debug")]
         {
-            assert!(crate::FSP_ALLOC.is_initialized(), "Global Allocator is not initialized");
+            assert!(crate::entrypoints::FSP_ALLOC.is_initialized(), "Global Allocator is not initialized");
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
             unsafe {
                 use core::fmt::Write;
-                writeln!(&mut crate::FSP_CONSOLE, "FSP DEBUG: {}", alloc::format!($($x),+)).unwrap();
+                writeln!(&mut crate::entrypoints::FSP_CONSOLE, "FSP DEBUG: {}", alloc::format!($($x),+)).unwrap();
             }
         }
     };
