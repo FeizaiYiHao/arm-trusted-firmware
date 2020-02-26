@@ -3,10 +3,10 @@
 
 #![macro_use]
 
-///! This is used when there is no dynamic memory.
+///! This can only be used when there is dynamic memory.
 #[macro_export]
-macro_rules! static_debug {
-    ( $x:literal ) => {
+macro_rules! debug {
+    ( $x:expr ) => {
         #[cfg(feature = "debug")]
         {
             #[allow(unused_unsafe)] // to avoid nested unsafe warnings
@@ -16,20 +16,12 @@ macro_rules! static_debug {
             }
         }
     };
-}
 
-///! This can only be used when there is dynamic memory.
-#[macro_export]
-macro_rules! debug {
-    ( $($x:expr),+ ) => {
-        #[cfg(feature = "debug")]
+    ( $x:literal, $($y:expr),+ ) => {
         {
-            assert!(crate::entrypoints::FSP_ALLOC.is_initialized(), "Global Allocator is not initialized");
-            #[allow(unused_unsafe)] // to avoid nested unsafe warnings
-            unsafe {
-                use core::fmt::Write;
-                writeln!(&mut crate::entrypoints::FSP_CONSOLE, "FSP DEBUG: {}", alloc::format!($($x),+)).unwrap();
-            }
+            // TODO: verify if we need a global allocator with alloc::format!
+            //assert!(crate::entrypoints::FSP_ALLOC.is_initialized(), "Global allocator is not initialized");
+            debug!(alloc::format!($x, $($y),+));
         }
     };
 }

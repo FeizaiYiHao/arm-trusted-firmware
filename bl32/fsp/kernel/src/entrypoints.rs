@@ -5,7 +5,6 @@ extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by 
 use crate::console;
 use crate::fsp_alloc;
 use crate::qemu_constants;
-use core::panic::PanicInfo;
 
 ///! Custom global allocator
 #[global_allocator]
@@ -98,12 +97,12 @@ fn mem_test() {
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    static_debug!("Panic");
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    debug!(info.payload().downcast_ref::<&str>().unwrap());
     loop {}
 }
 
 #[alloc_error_handler]
 fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
-    panic!()
+    panic!("alloc error")
 }

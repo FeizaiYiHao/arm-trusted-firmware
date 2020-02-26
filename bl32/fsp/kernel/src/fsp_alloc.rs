@@ -372,7 +372,7 @@ unsafe impl GlobalAlloc for FspAlloc {
 
         // BECtl not implemented
 
-        static_debug!("No memory left to allocate");
+        debug!("No memory left to allocate");
 
         null_mut()
     }
