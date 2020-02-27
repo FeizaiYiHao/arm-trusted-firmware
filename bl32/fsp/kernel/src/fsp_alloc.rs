@@ -194,7 +194,7 @@ impl BFHead {
 //};
 pub struct FspAlloc {
     freelist: BFHead,
-    initialized: bool,
+    //initialized: bool,
 }
 
 impl FspAlloc {
@@ -206,17 +206,17 @@ impl FspAlloc {
     pub const fn new() -> FspAlloc {
         FspAlloc {
             freelist: BFHead::new(),
-            initialized: false,
+            //initialized: false,
         }
     }
 
-    pub fn is_initialized(&self) -> bool {
-        self.initialized
-    }
+    //pub fn is_initialized(&self) -> bool {
+    //    self.initialized
+    //}
 
-    fn set_initialized(&self, init: bool) {
-        unsafe { (&mut *(self as *const FspAlloc as *mut FspAlloc)).initialized = init }
-    }
+    //fn set_initialized(&self, init: bool) {
+    //    unsafe { (&mut *(self as *const FspAlloc as *mut FspAlloc)).initialized = init }
+    //}
 
     fn ql_size(&self) -> usize {
         core::mem::size_of::<QLinks>()
@@ -285,7 +285,7 @@ impl FspAlloc {
         bn.set_bsize(ESENT);
         bn.set_allocated(true);
 
-        self.set_initialized(true);
+        //self.set_initialized(true);
     }
 }
 
