@@ -1,12 +1,10 @@
 # Preliminary 
-FSP only targets QEMU virt Armv8-A (AArch64). It is a stripped-down version of
-TSP and binds Rust code. The TSP part is not cleanly separated yet and it is
-not self-contained either. It needs to be compiled together with ARM Trusted
-Firmware-A (TF-A). The Rust code so far simply calls a C function that prints
-out a log message. This is just to demonstrate that we can boot our own
-[Secure-EL1 Payload
+FSP is our own [Secure-EL1 Payload
 (SP)](https://trustedfirmware-a.readthedocs.io/en/latest/getting_started/image-terminology.html#secure-el1-payload-sp-ap-bl32)
-written in Rust.
+written in Rust. FSP only targets QEMU virt Armv8-A (AArch64). It is a
+stripped-down version of TSP and binds Rust code. The TSP part is not cleanly
+separated yet and it is not self-contained either. It needs to be compiled
+together with ARM Trusted Firmware-A (TF-A).
 
 The following is the call sequence.
 
@@ -78,7 +76,7 @@ that, unzip the file.
 $ tar -xf gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu.tar.xz
 ```
 
-The above command will create `gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu' directory.
+The above command will create `gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu` directory.
 
 For convenience, add the following to your shell's startup file, e.g., `~/.profile` or `~/.bashrc`
 if you use bash.
@@ -111,7 +109,7 @@ A Linux kernel needs an initramfs or rootfs to boot up completely. Otherwise,
 it will just panic at the end of the booting process. The easiest way is
 probably to have a simple initramfs that Linux can load into memory and use.
 One way to create a simple initramfs is to use
-['Busybox'](https://busybox.net).
+[`Busybox`](https://busybox.net).
 
 To setup a Busybox-based initramfs, first download Busybox:
 
@@ -128,14 +126,9 @@ $ ARCH=arm64 make defconfig
 ```
 
 Now we need to change a config variable to make a static Busybox binary. To do
-so, open `.config` using your editor of choice. For example, with vim:
-
-```
-$ vim .config
-```
-
-Once you open `.config`, search for CONFIG_STATIC. It should be a comment that says
-`# CONFIG_STATIC is not set`. Remove that line and add `CONFIG_STATIC=y` instead.
+so, open `.config` using your editor of choice. Once you open `.config`, search for CONFIG_STATIC.
+It should be a comment that says `# CONFIG_STATIC is not set`. Remove that line and add
+`CONFIG_STATIC=y` instead.
 
 We can now compile:
 
@@ -166,7 +159,7 @@ $ cp -a ~/dev/busybox-1.31.1/_install/* .
 ```
 
 An initramfs needs an init script that gets executed at boot time. So create a
-new file called `init`, open it, and put the following inside:
+new file named `init`, open it, and put the following inside:
 
 ```
 #!/bin/sh
