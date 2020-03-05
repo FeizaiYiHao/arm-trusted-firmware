@@ -1,10 +1,10 @@
 # Preliminary 
-FSP is our own [Secure-EL1 Payload
+FSP is a [Secure-EL1 Payload
 (SP)](https://trustedfirmware-a.readthedocs.io/en/latest/getting_started/image-terminology.html#secure-el1-payload-sp-ap-bl32)
 written in Rust. FSP only targets QEMU virt Armv8-A (AArch64). It is a
 stripped-down version of TSP and binds Rust code. The TSP part is not cleanly
 separated yet and it is not self-contained either. It needs to be compiled
-together with ARM Trusted Firmware-A (TF-A).
+together with ARM Trusted Firmware-A (TF-A). It does not do much at this point except booting up.
 
 The following is the call sequence.
 
