@@ -1,17 +1,36 @@
 //! This is a dynamic memory allocator.
+//!
+//! Bad things that should not occur.
+//!
+//! Initialization:
+//!
+//! Initializing memory that we should not manage
+//! Not initializing the data structure correctly
+//!
+//! Allocation:
+//!
+//! Allocating a block that overlaps with an already-allocated block
+//! Not finding a free block when there is one
+//! Not modifying the data structure correctly
+//!
+//! Deallocation:
+//!
+//! Deallocating a block that overlaps with another already-allocated block
+//! Deallocating a free block
+//! Not modifying the data structure correctly
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr::null_mut;
 
-///! Buffer allocation size quantum: all buffers allocated are a multiple of this size.  This
-///! MUST be a power of two.
+/// Buffer allocation size quantum: all buffers allocated are a multiple of this size.  This
+/// MUST be a power of two.
 const SIZE_QUANT: usize = 4;
 
-///! End sentinel: value placed in bsize field of dummy block delimiting
-///! end of pool block. The most negative number which will fit in a
-///! bufsize, defined in a way that the compiler will accept.
+/// End sentinel: value placed in bsize field of dummy block delimiting
+/// end of pool block. The most negative number which will fit in a
+/// bufsize, defined in a way that the compiler will accept.
 //const ESENT: isize = (-(((1 << (core::mem::size_of::<isize>() * 8 - 2)) - 1) * 2) - 2);
 // TODO: Not sure if this is okay
 const ESENT: usize = usize::max_value();
@@ -194,7 +213,6 @@ impl BFHead {
 //};
 pub struct FspAlloc {
     freelist: BFHead,
-    //initialized: bool,
 }
 
 impl FspAlloc {
@@ -206,17 +224,8 @@ impl FspAlloc {
     pub const fn new() -> FspAlloc {
         FspAlloc {
             freelist: BFHead::new(),
-            //initialized: false,
         }
     }
-
-    //pub fn is_initialized(&self) -> bool {
-    //    self.initialized
-    //}
-
-    //fn set_initialized(&self, init: bool) {
-    //    unsafe { (&mut *(self as *const FspAlloc as *mut FspAlloc)).initialized = init }
-    //}
 
     fn ql_size(&self) -> usize {
         core::mem::size_of::<QLinks>()
@@ -231,17 +240,17 @@ impl FspAlloc {
         }
     }
 
-    // This is bpool(), but renamed to init(). Unlike the original bpool(), we're assuming that
-    // this is only called once in the beginning. This must be called.
-    // &self is used instead of &mut self since a static struct cannot call a method with a mutable
-    // self.
+    /// This is bpool(), but renamed to init(). Unlike the original bpool(), we're assuming that
+    /// this is only called once in the beginning. This must be called.
+    /// &self is used instead of &mut self since a static struct cannot call a method with a
+    /// mutable self.
     pub fn init(&self, buf: usize, len: usize) {
         self.freelist.init(0, 0, &self.freelist, &self.freelist);
         let len = len & !(SIZE_QUANT - 1);
 
-        /* Since the block is initially occupied by a single free  buffer,
-        it  had better  not  be  (much) larger than the largest buffer
-        whose size we can store in bhead.bsize. */
+        // Since the block is initially occupied by a single free buffer,
+        // it had better not be (much) larger than the largest buffer
+        // whose size we can store in bhead.bsize.
         assert!(
             (len - core::mem::size_of::<BFHead>()) <= ESENT,
             "FspAlloc.init() len too big"
@@ -249,12 +258,12 @@ impl FspAlloc {
 
         let b: &mut BFHead = BFHead::from_addr(buf);
 
-        /* Clear the backpointer at the start of the block to indicate that
-        there is no free block prior to this one. That blocks
-        recombination when the first block in memory is released. */
+        // Clear the backpointer at the start of the block to indicate that
+        // there is no free block prior to this one. That blocks
+        // recombination when the first block in memory is released.
         b.set_prevfree(0);
 
-        /* Chain the new block to the free list. */
+        // Chain the new block to the free list.
         assert!(
             self.freelist.blink_ref().flink_ref().eq(&self.freelist),
             "FspAlloc.init() incorrect list initialization"
@@ -268,13 +277,13 @@ impl FspAlloc {
         self.freelist.set_blink(b);
         b.blink_mut_ref().set_flink(b);
 
-        /* Create a dummy allocated buffer at the end of the pool. This dummy
-        buffer is seen when a buffer at the end of the pool is released and
-        blocks recombination of the last buffer with the dummy buffer at
-        the end. The length in the dummy buffer is set to the largest
-        negative number to denote the end of the pool for diagnostic
-        routines (this specific value is not counted on by the actual
-        allocation and release functions). */
+        // Create a dummy allocated buffer at the end of the pool. This dummy
+        // buffer is seen when a buffer at the end of the pool is released and
+        // blocks recombination of the last buffer with the dummy buffer at
+        // the end. The length in the dummy buffer is set to the largest
+        // negative number to denote the end of the pool for diagnostic
+        // routines (this specific value is not counted on by the actual
+        // allocation and release functions).
 
         let len = len - core::mem::size_of::<BHead>();
         b.set_bsize(len);
@@ -284,23 +293,21 @@ impl FspAlloc {
         bn.set_prevfree(len);
         bn.set_bsize(ESENT);
         bn.set_allocated(true);
-
-        //self.set_initialized(true);
     }
 }
 
 unsafe impl GlobalAlloc for FspAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut size: usize = layout.size();
-        /* Need at least room for the queue links. */
+        // Need at least room for the queue links.
         if size < self.size_q() {
             size = self.size_q();
         }
         size = (size + (SIZE_QUANT - 1)) & (!(SIZE_QUANT - 1));
         size = size + core::mem::size_of::<BHead>();
 
-        /* Scan the free list searching for the first buffer big enough
-        to hold the requested size buffer. */
+        // Scan the free list searching for the first buffer big enough
+        // to hold the requested size buffer.
 
         let mut b = self.freelist.flink_mut_ref();
 
@@ -311,14 +318,14 @@ unsafe impl GlobalAlloc for FspAlloc {
             );
             let bsize = b.bsize();
             if bsize >= size {
-                /* Buffer  is big enough to satisfy  the request.  Allocate it
-                to the caller.  We must decide whether the buffer is  large
-                enough  to  split  into  the part given to the caller and a
-                free buffer that remains on the free list, or  whether  the
-                entire  buffer  should  be  removed from the free list and
-                given to the caller in its entirety.   We  only  split  the
-                buffer if enough room remains for a header plus the minimum
-                quantum of allocation. */
+                // Buffer is big enough to satisfy the request. Allocate it
+                // to the caller. We must decide whether the buffer is large
+                // enough to split into the part given to the caller and a
+                // free buffer that remains on the free list, or whether the
+                // entire buffer should be removed from the free list and
+                // given to the caller in its entirety. We only split the
+                // buffer if enough room remains for a header plus the minimum
+                // quantum of allocation.
                 if (bsize - size) > (self.size_q() + core::mem::size_of::<BFHead>()) {
                     let ba: &mut BHead = BHead::from_addr(b.addr() + bsize - size);
                     let bn: &mut BHead = BHead::from_addr(ba.addr() + size);
@@ -326,21 +333,21 @@ unsafe impl GlobalAlloc for FspAlloc {
                         bn.prevfree() == b.bsize(),
                         "FspAlloc.alloc() inconsistent buffer size information"
                     );
-                    /* Subtract size from length of free block. */
+                    // Subtract size from length of free block.
                     let bsize = bsize - size;
                     b.set_bsize(bsize);
-                    /* Link allocated buffer to the previous free buffer. */
+                    // Link allocated buffer to the previous free buffer.
                     ba.set_prevfree(bsize);
-                    /* Plug negative size into user buffer. */
+                    // Plug negative size into user buffer.
                     ba.set_bsize(size);
                     ba.set_allocated(true);
-                    /* Mark buffer after this one not preceded by free block. */
+                    // Mark buffer after this one not preceded by free block.
                     bn.set_prevfree(0);
 
                     return (ba.addr() + core::mem::size_of::<BHead>()) as *mut u8;
                 } else {
-                    /* The buffer isn't big enough to split.  Give  the  whole
-                    shebang to the caller and remove it from the free list. */
+                    // The buffer isn't big enough to split. Give the whole
+                    // shebang to the caller and remove it from the free list.
                     let ba: &mut BHead = BHead::from_addr(b.addr() + b.bsize());
                     assert!(
                         ba.prevfree() == b.bsize(),
@@ -357,17 +364,17 @@ unsafe impl GlobalAlloc for FspAlloc {
 
                     b.blink_mut_ref().set_flink(b.flink_ref());
                     b.flink_mut_ref().set_blink(b.blink_ref());
-                    /* Negate size to mark buffer allocated. */
+                    // Negate size to mark buffer allocated.
                     b.set_bsize(b.bsize());
                     b.set_allocated(true);
-                    /* Zero the back pointer in the next buffer in memory
-                    to indicate that this buffer is allocated. */
+                    // Zero the back pointer in the next buffer in memory
+                    // to indicate that this buffer is allocated.
                     ba.set_prevfree(0);
                     return (b.addr() + core::mem::size_of::<BHead>()) as *mut u8;
                 }
             }
 
-            b = b.flink_mut_ref(); /* Link to next buffer */
+            b = b.flink_mut_ref(); // Link to next buffer
         }
 
         // BECtl not implemented
@@ -384,30 +391,30 @@ unsafe impl GlobalAlloc for FspAlloc {
         );
         let mut b: &mut BFHead = BFHead::from_addr((buf as usize) - core::mem::size_of::<BHead>());
 
-        /* Buffer size must be negative, indicating that the buffer is
-        allocated. */
+        // Buffer size must be negative, indicating that the buffer is
+        // allocated.
 
         assert!(
             b.is_allocated(),
             "FspAlloc.dealloc() deallocating a free buffer"
         );
 
-        /* Back pointer in next buffer must be zero, indicating the
-        same thing: */
+        // Back pointer in next buffer must be zero, indicating the
+        // same thing:
         assert!(
             BHead::from_addr(b.addr() + b.bsize()).prevfree() == 0,
             "FspAlloc.dealloc() deallocating a free buffer"
         );
 
-        /* If the back link is nonzero, the previous buffer is free.  */
+        // If the back link is nonzero, the previous buffer is free.
         if b.prevfree() != 0 {
-            /* The previous buffer is free. Consolidate this buffer with it
-            by adding the length of this buffer to the previous free
-            buffer. Note that we subtract the size in the buffer being
-            released, since it's negative to indicate that the buffer is
-            allocated. */
+            // The previous buffer is free. Consolidate this buffer with it
+            // by adding the length of this buffer to the previous free
+            // buffer. Note that we subtract the size in the buffer being
+            // released, since it's negative to indicate that the buffer is
+            // allocated.
             let size = b.bsize();
-            /* Make the previous buffer the one we're working on. */
+            // Make the previous buffer the one we're working on.
             assert!(
                 BHead::from_addr(b.addr() - b.prevfree()).bsize() == b.prevfree(),
                 "FspAlloc.dealloc() inconsistent buffer information"
@@ -416,8 +423,8 @@ unsafe impl GlobalAlloc for FspAlloc {
             b.set_bsize(b.bsize() + size);
             b.set_allocated(false);
         } else {
-            /* The previous buffer isn't allocated. Insert this buffer
-            on the free list as an isolated free block. */
+            // The previous buffer isn't allocated. Insert this buffer
+            // on the free list as an isolated free block.
             assert!(
                 self.freelist.blink_ref().flink_ref().eq(&self.freelist),
                 "FspAlloc.dealloc() inconsistent list formation"
@@ -434,15 +441,15 @@ unsafe impl GlobalAlloc for FspAlloc {
             b.set_allocated(false);
         }
 
-        /* Now we look at the next buffer in memory, located by advancing from
-        the  start  of  this  buffer  by its size, to see if that buffer is
-        free.  If it is, we combine  this  buffer  with      the  next  one  in
-        memory, dechaining the second buffer from the free list. */
+        // Now we look at the next buffer in memory, located by advancing from
+        // the start of this buffer by its size, to see if that buffer is
+        // free. If it is, we combine this buffer with the next one in
+        // memory, dechaining the second buffer from the free list.
         let mut bn: &mut BFHead = BFHead::from_addr(b.addr() + b.bsize());
 
         if !bn.is_allocated() {
-            /* The buffer is free.  Remove it from the free list and add
-            its size to that of our buffer. */
+            // The buffer is free. Remove it from the free list and add
+            // its size to that of our buffer.
             assert!(
                 BHead::from_addr(bn.addr() + bn.bsize()).prevfree() == bn.bsize(),
                 "FspAlloc.dealloc() inconsistent allocation state"
@@ -459,18 +466,18 @@ unsafe impl GlobalAlloc for FspAlloc {
             bn.flink_mut_ref().set_blink(bn.blink_ref());
             b.set_bsize(b.bsize() + bn.bsize());
 
-            /* Finally,  advance  to   the  buffer  that   follows  the  newly
-            consolidated free block.  We must set its  backpointer  to  the
-            head  of  the  consolidated free block.  We know the next block
-            must be an allocated block because the process of recombination
-            guarantees  that  two  free  blocks will never be contiguous in
-            memory.  */
+            // Finally, advance to the buffer that follows the newly
+            // consolidated free block. We must set its backpointer to the
+            // head of the consolidated free block. We know the next block
+            // must be an allocated block because the process of recombination
+            // guarantees that two free blocks will never be contiguous in
+            // memory.
 
             bn = BFHead::from_addr(b.addr() + b.bsize());
         }
 
-        /* The next buffer is allocated.  Set the backpointer in it  to  point
-        to this buffer; the previous free buffer in memory. */
+        // The next buffer is allocated. Set the backpointer in it to point
+        // to this buffer; the previous free buffer in memory.
         assert!(
             bn.is_allocated(),
             "FspAlloc.dealloc() inconsistent allocation state"

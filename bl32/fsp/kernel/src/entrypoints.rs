@@ -6,15 +6,15 @@ use crate::console;
 use crate::fsp_alloc;
 use crate::qemu_constants;
 
-///! Custom global allocator
+/// Custom global allocator
 #[global_allocator]
 pub static FSP_ALLOC: fsp_alloc::FspAlloc = fsp_alloc::FspAlloc::new();
 
-///! Global console
+/// Global console
 // TODO: Find a way to avoid static mut
 pub static mut FSP_CONSOLE: console::FspConsole = console::FspConsole::new();
 
-///! This is the initialization function that should be called first before anything else.
+/// This is the initialization function that should be called first before anything else.
 fn fsp_init() {
     unsafe {
         FSP_CONSOLE.init();
@@ -31,7 +31,7 @@ fn fsp_init() {
     FSP_ALLOC.init(base, size);
 }
 
-///! This is the actual main function that extern_c_defs::fsp_main_wrapper() calls.
+/// This is the actual main function that extern_c_defs::fsp_main_wrapper() calls.
 pub fn fsp_main() {
     fsp_init();
 

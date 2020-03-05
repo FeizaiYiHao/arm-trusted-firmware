@@ -3,6 +3,17 @@
 //!
 //! This file mostly contains all asm-facing definitions and functions, as well as Rust
 //! initialization.
+//!
+//! Bad things that should not occur.
+//!
+//! Accessing unsafe variables (defined by asm) or making unsafe calls (defined by asm) without
+//! observing Rust's borrow checker rules.
+//!
+//! Not using correct types (that asm expects) from the Rust side (e.g., primitive types, structs,
+//! arrays, etc.)
+//!
+//! Wrong type casting when passing references and pointers which is related to the above
+//! correct type issue
 
 #![no_std]
 #![feature(alloc_error_handler)] // for our own allocator implementation
@@ -17,8 +28,8 @@ mod entrypoints;
 mod fsp_alloc;
 mod qemu_constants;
 
-///! SMC function IDs that FSP uses to signal various forms of completions
-///! to the secure payload dispatcher.
+/// SMC function IDs that FSP uses to signal various forms of completions
+/// to the secure payload dispatcher.
 //#[no_mangle]
 //pub static FSP_ENTRY_DONE: u64 = 0xf2000000; // currently only used by asm
 #[no_mangle]
@@ -42,7 +53,7 @@ pub static FSP_SYSTEM_RESET_DONE: u64 = 0xf2000009;
 //#[no_mangle]
 //pub static FSP_HANDLE_SEL1_INTR_AND_RETURN: u64 = 0x2004; // currently only used by asm
 
-///! Definitions to help the assembler access the SMC/ERET args structure
+/// Definitions to help the assembler access the SMC/ERET args structure
 // TODO: These are currently duplicated from fsp_private.h
 //pub const FSP_ARGS_SIZE: usize = 0x40; // currently only used by asm
 pub const FSP_ARG0: usize = 0x0;
@@ -69,8 +80,8 @@ pub struct FspVectors {
     abort_yield_smc_entry: u32,
 }
 
-///! Per cpu data structure to populate parameters for an SMC in C code and use
-///! a pointer to this structure in assembler code to populate x0-x7
+/// Per cpu data structure to populate parameters for an SMC in C code and use
+/// a pointer to this structure in assembler code to populate x0-x7
 // TODO: avoid static mut (unstable)
 static mut FSP_SMC_ARGS: [FspArgs; crate::qemu_constants::PLATFORM_CORE_COUNT] =
     [FspArgs::new(); crate::qemu_constants::PLATFORM_CORE_COUNT];
@@ -90,7 +101,7 @@ impl FspArgs {
     }
 }
 
-///! This is the main wrapper function that fsp_entrypoint.S calls.
+/// This is the main wrapper function that fsp_entrypoint.S calls.
 #[no_mangle]
 pub extern "C" fn fsp_main_wrapper() -> *const FspVectors {
     entrypoints::fsp_main();
@@ -113,7 +124,7 @@ extern "C" fn set_smc_args(
     arg6: u64,
     arg7: u64,
 ) -> &'static FspArgs {
-    let linear_id: u32 = unsafe { plat_my_core_pos() }; // TODO: should call plat_my_core_pos(), i.e., no SMP for now
+    let linear_id: u32 = unsafe { plat_my_core_pos() };
     let pcpu_smc_args: &mut FspArgs = unsafe { &mut FSP_SMC_ARGS[linear_id as usize] };
     write_sp_arg(pcpu_smc_args, FSP_ARG0, arg0);
     write_sp_arg(pcpu_smc_args, FSP_ARG1, arg1);
@@ -127,17 +138,17 @@ extern "C" fn set_smc_args(
     pcpu_smc_args
 }
 
-///! This function performs any remaining book keeping in the test secure payload
-///! after this cpu's architectural state has been setup in response to an earlier
-///! psci cpu_on request.
+/// This function performs any remaining book keeping in the test secure payload
+/// after this cpu's architectural state has been setup in response to an earlier
+/// psci cpu_on request.
 #[no_mangle]
 pub extern "C" fn cpu_on_main_wrapper() -> &'static FspArgs {
     /* Indicate to the SPD that we have completed turned ourselves on */
     set_smc_args(FSP_ON_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function performs any remaining book keeping in the test secure payload
-///! before this cpu is turned off in response to a psci cpu_off request.
+/// This function performs any remaining book keeping in the test secure payload
+/// before this cpu is turned off in response to a psci cpu_off request.
 #[no_mangle]
 pub extern "C" fn cpu_off_main_wrapper(
     _arg0: u64,
@@ -153,9 +164,9 @@ pub extern "C" fn cpu_off_main_wrapper(
     set_smc_args(FSP_OFF_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function performs any book keeping in the test secure payload before
-///! this cpu's architectural state is saved in response to an earlier psci
-///! cpu_suspend request.
+/// This function performs any book keeping in the test secure payload before
+/// this cpu's architectural state is saved in response to an earlier psci
+/// cpu_suspend request.
 #[no_mangle]
 pub extern "C" fn cpu_suspend_main_wrapper(
     _arg0: u64,
@@ -171,9 +182,9 @@ pub extern "C" fn cpu_suspend_main_wrapper(
     set_smc_args(FSP_SUSPEND_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function performs any book keeping in the test secure payload after this
-///! cpu's architectural state has been restored after wakeup from an earlier psci
-///! cpu_suspend request.
+/// This function performs any book keeping in the test secure payload after this
+/// cpu's architectural state has been restored after wakeup from an earlier psci
+/// cpu_suspend request.
 #[no_mangle]
 pub extern "C" fn cpu_resume_main_wrapper(
     _max_off_pwrlvl: u64,
@@ -189,8 +200,8 @@ pub extern "C" fn cpu_resume_main_wrapper(
     set_smc_args(FSP_RESUME_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function performs any remaining bookkeeping in the test secure payload
-///! before the system is switched off (in response to a psci SYSTEM_OFF request)
+/// This function performs any remaining bookkeeping in the test secure payload
+/// before the system is switched off (in response to a psci SYSTEM_OFF request)
 #[no_mangle]
 pub extern "C" fn system_off_main_wrapper(
     _arg0: u64,
@@ -206,8 +217,8 @@ pub extern "C" fn system_off_main_wrapper(
     set_smc_args(FSP_SYSTEM_OFF_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function performs any remaining bookkeeping in the test secure payload
-///! before the system is reset (in response to a psci SYSTEM_RESET request)
+/// This function performs any remaining bookkeeping in the test secure payload
+/// before the system is reset (in response to a psci SYSTEM_RESET request)
 #[no_mangle]
 pub extern "C" fn system_reset_main_wrapper(
     _arg0: u64,
@@ -223,10 +234,10 @@ pub extern "C" fn system_reset_main_wrapper(
     set_smc_args(FSP_SYSTEM_RESET_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! FSP fast smc handler. The secure monitor jumps to this function by
-///! doing the ERET after populating X0-X7 registers. The arguments are received
-///! in the function arguments in order. Once the service is rendered, this
-///! function returns to Secure Monitor by raising SMC.
+/// FSP fast smc handler. The secure monitor jumps to this function by
+/// doing the ERET after populating X0-X7 registers. The arguments are received
+/// in the function arguments in order. Once the service is rendered, this
+/// function returns to Secure Monitor by raising SMC.
 #[no_mangle]
 pub extern "C" fn smc_handler_wrapper(
     func: u64,
@@ -242,10 +253,10 @@ pub extern "C" fn smc_handler_wrapper(
     set_smc_args(func, 0, arg1, arg2, 0, 0, 0, 0)
 }
 
-///! FSP smc abort handler. This function is called when aborting a preempted
-///! yielding SMC request. It should cleanup all resources owned by the SMC
-///! handler such as locks or dynamically allocated memory so following SMC
-///! request are executed in a clean environment.
+/// FSP smc abort handler. This function is called when aborting a preempted
+/// yielding SMC request. It should cleanup all resources owned by the SMC
+/// handler such as locks or dynamically allocated memory so following SMC
+/// request are executed in a clean environment.
 #[no_mangle]
 pub extern "C" fn abort_smc_handler_wrapper(
     _func: u64,
@@ -260,37 +271,37 @@ pub extern "C" fn abort_smc_handler_wrapper(
     set_smc_args(FSP_ABORT_DONE, 0, 0, 0, 0, 0, 0, 0)
 }
 
-///! This function updates the FSP statistics for S-EL1 interrupts handled
-///! synchronously i.e the ones that have been handed over by the FSPD. It also
-///! keeps count of the number of times control was passed back to the FSPD
-///! after handling the interrupt. In the future it will be possible that the
-///! FSPD hands over an S-EL1 interrupt to the FSP but does not expect it to
-///! return execution. This statistic will be useful to distinguish between these
-///! two models of synchronous S-EL1 interrupt handling. The 'elr_el3' parameter
-///! contains the address of the instruction in normal world where this S-EL1
-///! interrupt was generated.
+/// This function updates the FSP statistics for S-EL1 interrupts handled
+/// synchronously i.e the ones that have been handed over by the FSPD. It also
+/// keeps count of the number of times control was passed back to the FSPD
+/// after handling the interrupt. In the future it will be possible that the
+/// FSPD hands over an S-EL1 interrupt to the FSP but does not expect it to
+/// return execution. This statistic will be useful to distinguish between these
+/// two models of synchronous S-EL1 interrupt handling. The 'elr_el3' parameter
+/// contains the address of the instruction in normal world where this S-EL1
+/// interrupt was generated.
 #[no_mangle]
 pub extern "C" fn update_sync_sel1_intr_stats_wrapper(_t: u32, _elr_el3: u64) {}
 
-///! This function is invoked when a non S-EL1 interrupt is received and causes
-///! the preemption of FSP. This function returns FSP_PREEMPTED and results
-///! in the control being handed over to EL3 for handling the interrupt.
+/// This function is invoked when a non S-EL1 interrupt is received and causes
+/// the preemption of FSP. This function returns FSP_PREEMPTED and results
+/// in the control being handed over to EL3 for handling the interrupt.
 #[no_mangle]
 pub extern "C" fn handle_preemption() -> i32 {
     return FSP_PREEMPTED as i32;
 }
 
-///! common_int_handler is called as a part of both synchronous and
-///! asynchronous handling of FSP interrupts. Currently the physical timer
-///! interrupt is the only S-EL1 interrupt that this handler expects. It returns
-///! 0 upon successfully handling the expected interrupt and all other
-///! interrupts are treated as normal world or EL3 interrupts.
+/// common_int_handler is called as a part of both synchronous and
+/// asynchronous handling of FSP interrupts. Currently the physical timer
+/// interrupt is the only S-EL1 interrupt that this handler expects. It returns
+/// 0 upon successfully handling the expected interrupt and all other
+/// interrupts are treated as normal world or EL3 interrupts.
 #[no_mangle]
 pub extern "C" fn common_int_handler_wrapper() -> i32 {
     0
 }
 
-///! panic_handler for the assembly
+/// panic_handler for the assembly
 #[no_mangle]
 pub extern "C" fn plat_panic_handler_wrapper() -> ! {
     panic!("plat_panic_handler");

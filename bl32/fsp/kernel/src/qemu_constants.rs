@@ -1,10 +1,10 @@
-///! Currently some definitions are in qemu_defs.h
+//! Currently some definitions are in qemu_defs.h
 
-///! Secure DRAM memory
+/// Secure DRAM memory
 pub const BL32_MEM_BASE: usize = 0x0e100000;
 pub const BL32_MEM_SIZE: usize = 0x00f00000; // This is 15MB.
 
-///! QEMU PL011 console related constants
+/// QEMU PL011 console related constants
 pub const UART0_BASE: usize = 0x09000000;
 //pub const UART1_BASE: usize = 0x09040000;
 pub const UART0_CLK_IN_HZ: u32 = 1;

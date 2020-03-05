@@ -3,7 +3,7 @@
 
 #![macro_use]
 
-///! This can only be used when there is dynamic memory.
+/// This can only be used when there is dynamic memory.
 #[macro_export]
 macro_rules! debug {
     ( $x:expr ) => {
