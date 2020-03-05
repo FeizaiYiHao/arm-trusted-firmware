@@ -4,15 +4,13 @@
 //! This file mostly contains all asm-facing definitions and functions, as well as Rust
 //! initialization.
 //!
-//! Bad things that should not occur.
+//! Bad things that should not occur:
 //!
-//! Accessing unsafe variables (defined by asm) or making unsafe calls (defined by asm) without
+//! - Accessing unsafe variables (defined by asm) or making unsafe calls (defined by asm) without
 //! observing Rust's borrow checker rules.
-//!
-//! Not using correct types (that asm expects) from the Rust side (e.g., primitive types, structs,
+//! - Not using correct types (that asm expects) from the Rust side (e.g., primitive types, structs,
 //! arrays, etc.)
-//!
-//! Wrong type casting when passing references and pointers which is related to the above
+//! - Wrong type casting when passing references and pointers which is related to the above
 //! correct type issue
 
 #![no_std]

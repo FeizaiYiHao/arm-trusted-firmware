@@ -1,23 +1,18 @@
 //! This is a dynamic memory allocator.
 //!
-//! Bad things that should not occur.
+//! Bad things that should not occur:
 //!
-//! Initialization:
-//!
-//! Initializing memory that we should not manage
-//! Not initializing the data structure correctly
-//!
-//! Allocation:
-//!
-//! Allocating a block that overlaps with an already-allocated block
-//! Not finding a free block when there is one
-//! Not modifying the data structure correctly
-//!
-//! Deallocation:
-//!
-//! Deallocating a block that overlaps with another already-allocated block
-//! Deallocating a free block
-//! Not modifying the data structure correctly
+//! - Initialization
+//!     - Initializing memory that we should not manage
+//!     - Not initializing the data structure correctly
+//! - Allocation
+//!     - Allocating a block that overlaps with an already-allocated block
+//!     - Not finding a free block when there is one
+//!     - Not modifying the data structure correctly
+//! - Deallocation
+//!     - Deallocating a block that overlaps with another already-allocated block
+//!     - Deallocating a free block
+//!     - Not modifying the data structure correctly
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 

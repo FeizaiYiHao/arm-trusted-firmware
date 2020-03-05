@@ -1,3 +1,11 @@
+//! This has console implementation. It is not thread-safe.
+//!
+//! Bad things that should not occur:
+//!
+//! - Using wrong types for structs (these structs are shared between asm and Rust)
+//! - Making unsafe calls (defined by asm) without observing Rust's borrow checker rules
+//! - Console being used by multiple threads
+
 // TODO: need to check these sizes
 // A nullable fn pointer is an Option, since it's supposed to be represented the same way.
 #[repr(C)]
@@ -8,6 +16,7 @@ struct Console {
     getc: Option<extern "C" fn(*const Console) -> i32>,
     flush: Option<extern "C" fn(*const Console) -> i32>,
 }
+
 unsafe impl Sync for Console {} // TODO: I think this means that we don't support threads.
 
 // PL011 console from drivers/arm/pl011.h
@@ -17,6 +26,7 @@ pub struct ConsolePl011 {
     console: Console,
     base: u32,
 }
+
 unsafe impl Sync for ConsolePl011 {} // TODO: I think this means that we don't support threads.
 
 pub struct FspConsole {
@@ -42,8 +52,8 @@ impl FspConsole {
     }
 
     pub fn init(&mut self) {
+        use crate::qemu_constants;
         unsafe {
-            use crate::qemu_constants;
             crate::console_pl011_register(
                 qemu_constants::PLAT_QEMU_BOOT_UART_BASE as *const u8,
                 qemu_constants::PLAT_QEMU_BOOT_UART_CLK_IN_HZ,
@@ -53,7 +63,7 @@ impl FspConsole {
         }
         self.registered = true;
         self.console_set_scope(
-            crate::qemu_constants::CONSOLE_FLAG_BOOT | crate::qemu_constants::CONSOLE_FLAG_RUNTIME,
+            qemu_constants::CONSOLE_FLAG_BOOT | qemu_constants::CONSOLE_FLAG_RUNTIME,
         );
     }
 

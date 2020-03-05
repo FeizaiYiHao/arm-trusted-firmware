@@ -3,7 +3,6 @@
 
 #![macro_use]
 
-/// This can only be used when there is dynamic memory.
 #[macro_export]
 macro_rules! debug {
     ( $x:expr ) => {
@@ -19,7 +18,7 @@ macro_rules! debug {
 
     ( $x:literal, $($y:expr),+ ) => {
         {
-            // TODO: verify if we need a global allocator with alloc::format!
+            // TODO: verify if we need a global allocator with alloc::format
             //assert!(crate::entrypoints::FSP_ALLOC.is_initialized(), "Global allocator is not initialized");
             debug!(alloc::format!($x, $($y),+));
         }
