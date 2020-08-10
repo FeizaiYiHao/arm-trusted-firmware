@@ -247,11 +247,13 @@ $ rustup component add rust-src
 $ cargo install cargo-xbuild
 ```
 
-Note that our target triplet is `aarch64-unknown-none-softfloat` (specified in fsp.mk). This
-is because we're using `![no_std]` and running on bare metal hardware. `softfloat` means that we're
-disabling floating point and SIMD registers. Enabling those registers does not work as it is
-prevented by TF-A.  `aarch64-unknown-none-softfloat` is a [tier-3
-target](https://forge.rust-lang.org/release/platform-support.html).  Because of that, we need to be
+Note that our target triplet is `aarch64-unknown-fsp` (specified in fsp.mk). This is a target made
+by us based on `aarch64-unknown-none-softfloat`. We use this target because we're using `![no_std]`
+and running on bare metal hardware (that's what `none` means---no OS). `softfloat` means that we're
+disabling floating point and SIMD registers. However, we do enable SIMD as it doesn't affect us.
+Enabling floating point registers does not work as it is prevented by TF-A.
+`aarch64-unknown-none-softfloat` is a [tier-3
+target](https://forge.rust-lang.org/release/platform-support.html). Because of that, we need to be
 aware that it may cause problems.
 
 ## Getting Our Version of ARM Trusted Firmware-A (TF-A)
@@ -317,19 +319,3 @@ something like the following:
 bin      etc      linuxrc  sbin     usr
 dev      init     proc     sys
 ```
-
-## Critical Missing Pieces
-
-Right now, it doesn't do much except printing out debug messages. Even when it prints out debugging
-messages, it uses the existing TF-A's libc and console driver. The following are probably the
-critical pieces that are needed right away.
-
-### Testing Setup
-
-Rust has a testing framework and we can use this to do unit testing. We need to take a look and see
-how we can leverage it.
-
-### Exceptions and Interrupts
-
-Currently, we register dummy handlers for exceptions and interrupts. We need to implement real
-handlers.
