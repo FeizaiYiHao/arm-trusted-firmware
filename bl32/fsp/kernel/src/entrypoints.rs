@@ -3,6 +3,7 @@
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 
 use crate::console;
+use crate::debug;
 use crate::fsp_alloc;
 use crate::qemu_constants;
 

@@ -68,7 +68,6 @@
  * should make sure that this label is not used to branch prior
  * to calling this macro.
  */
- /*
 #define ASM_ASSERT(_cc) \
 .ifndef .L_assert_filename ;\
 .pushsection .rodata.str1.1, "aS" ;\
@@ -81,7 +80,6 @@ adr x0, .L_assert_filename ;\
 mov x1, __LINE__ ;\
 b   asm_assert ;\
 300:
-*/
 
 .macro  dcache_line_size  reg, tmp
     mrs \tmp, ctr_el0

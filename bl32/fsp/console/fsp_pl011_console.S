@@ -3,24 +3,22 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include <arch.h>
-#include <asm_macros.S>
-#include <assert_macros.S>
-#include <console_macros.S>
-#include <drivers/arm/pl011.h>
+#include "../boot/fsp_asm_macros.S"
+#include "fsp_console_macros.S"
+#include "fsp_pl011.h"
 
 	/*
 	 * "core" functions are low-level implementations that don't require
 	 * writable memory and are thus safe to call in BL1 crash context.
 	 */
-	.globl console_pl011_core_init
-	.globl console_pl011_core_putc
-	.globl console_pl011_core_getc
-	.globl console_pl011_core_flush
+	.globl fsp_console_pl011_core_init
+	.globl fsp_console_pl011_core_putc
+	.globl fsp_console_pl011_core_getc
+	.globl fsp_console_pl011_core_flush
 
-	.globl	console_pl011_putc
-	.globl	console_pl011_getc
-	.globl	console_pl011_flush
+	.globl	fsp_console_pl011_putc
+	.globl	fsp_console_pl011_getc
+	.globl	fsp_console_pl011_flush
 
 	/* -----------------------------------------------
 	 * int console_pl011_core_init(uintptr_t base_addr,
@@ -36,7 +34,7 @@
 	 * Clobber list : x1, x2, x3, x4
 	 * -----------------------------------------------
 	 */
-func console_pl011_core_init
+func fsp_console_pl011_core_init
 	/* Check the input base address */
 	cbz	x0, core_init_fail
 #if !PL011_GENERIC_UART
@@ -73,9 +71,9 @@ func console_pl011_core_init
 core_init_fail:
 	mov	w0, wzr
 	ret
-endfunc console_pl011_core_init
+endfunc fsp_console_pl011_core_init
 
-	.globl console_pl011_register
+	.globl fsp_console_pl011_register
 
 	/* -----------------------------------------------
 	 * int console_pl011_register(uintptr_t baseaddr,
@@ -92,13 +90,13 @@ endfunc console_pl011_core_init
 	 * Clobber list : x0, x1, x2, x6, x7, x14
 	 * -----------------------------------------------
 	 */
-func console_pl011_register
+func fsp_console_pl011_register
 	mov	x7, x30
 	mov	x6, x3
 	cbz	x6, register_fail
 	str	x0, [x6, #CONSOLE_T_PL011_BASE]
 
-	bl	console_pl011_core_init
+	bl	fsp_console_pl011_core_init
 	cbz	x0, register_fail
 
 	mov	x0, x6
@@ -107,7 +105,7 @@ func console_pl011_register
 
 register_fail:
 	ret	x7
-endfunc console_pl011_register
+endfunc fsp_console_pl011_register
 
 	/* --------------------------------------------------------
 	 * int console_pl011_core_putc(int c, uintptr_t base_addr)
@@ -119,7 +117,7 @@ endfunc console_pl011_register
 	 * Clobber list : x2
 	 * --------------------------------------------------------
 	 */
-func console_pl011_core_putc
+func fsp_console_pl011_core_putc
 #if ENABLE_ASSERTIONS
 	cmp	x1, #0
 	ASM_ASSERT(ne)
@@ -140,7 +138,7 @@ func console_pl011_core_putc
 	tbnz	w2, #PL011_UARTFR_TXFF_BIT, 2b
 	str	w0, [x1, #UARTDR]
 	ret
-endfunc console_pl011_core_putc
+endfunc fsp_console_pl011_core_putc
 
 	/* --------------------------------------------------------
 	 * int console_pl011_putc(int c, console_pl011_t *console)
@@ -152,14 +150,14 @@ endfunc console_pl011_core_putc
 	 * Clobber list : x2
 	 * --------------------------------------------------------
 	 */
-func console_pl011_putc
+func fsp_console_pl011_putc
 #if ENABLE_ASSERTIONS
 	cmp	x1, #0
 	ASM_ASSERT(ne)
 #endif /* ENABLE_ASSERTIONS */
 	ldr	x1, [x1, #CONSOLE_T_PL011_BASE]
-	b	console_pl011_core_putc
-endfunc console_pl011_putc
+	b	fsp_console_pl011_core_putc
+endfunc fsp_console_pl011_putc
 
 	/* ---------------------------------------------
 	 * int console_pl011_core_getc(uintptr_t base_addr)
@@ -171,7 +169,7 @@ endfunc console_pl011_putc
 	 * Clobber list : x0, x1
 	 * ---------------------------------------------
 	 */
-func console_pl011_core_getc
+func fsp_console_pl011_core_getc
 #if ENABLE_ASSERTIONS
 	cmp	x0, #0
 	ASM_ASSERT(ne)
@@ -186,7 +184,7 @@ func console_pl011_core_getc
 no_char:
 	mov	w0, #ERROR_NO_PENDING_CHAR
 	ret
-endfunc console_pl011_core_getc
+endfunc fsp_console_pl011_core_getc
 
 	/* ---------------------------------------------
 	 * int console_pl011_getc(console_pl011_t *console)
@@ -198,14 +196,14 @@ endfunc console_pl011_core_getc
 	 * Clobber list : x0, x1
 	 * ---------------------------------------------
 	 */
-func console_pl011_getc
+func fsp_console_pl011_getc
 #if ENABLE_ASSERTIONS
 	cmp	x0, #0
 	ASM_ASSERT(ne)
 #endif /* ENABLE_ASSERTIONS */
 	ldr	x0, [x0, #CONSOLE_T_PL011_BASE]
-	b	console_pl011_core_getc
-endfunc console_pl011_getc
+	b	fsp_console_pl011_core_getc
+endfunc fsp_console_pl011_getc
 
 	/* ---------------------------------------------
 	 * int console_pl011_core_flush(uintptr_t base_addr)
@@ -216,7 +214,7 @@ endfunc console_pl011_getc
 	 * Clobber list : x0, x1
 	 * ---------------------------------------------
 	 */
-func console_pl011_core_flush
+func fsp_console_pl011_core_flush
 #if ENABLE_ASSERTIONS
 	cmp	x0, #0
 	ASM_ASSERT(ne)
@@ -228,7 +226,7 @@ func console_pl011_core_flush
 
 	mov	w0, #0
 	ret
-endfunc console_pl011_core_flush
+endfunc fsp_console_pl011_core_flush
 
 	/* ---------------------------------------------
 	 * int console_pl011_flush(console_pl011_t *console)
@@ -239,11 +237,11 @@ endfunc console_pl011_core_flush
 	 * Clobber list : x0, x1
 	 * ---------------------------------------------
 	 */
-func console_pl011_flush
+func fsp_console_pl011_flush
 #if ENABLE_ASSERTIONS
 	cmp	x0, #0
 	ASM_ASSERT(ne)
 #endif /* ENABLE_ASSERTIONS */
 	ldr	x0, [x0, #CONSOLE_T_PL011_BASE]
-	b	console_pl011_core_flush
-endfunc console_pl011_flush
+	b	fsp_console_pl011_core_flush
+endfunc fsp_console_pl011_flush

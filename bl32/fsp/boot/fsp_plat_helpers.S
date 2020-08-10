@@ -99,7 +99,7 @@ func plat_crash_console_init
 	mov_imm x0, PLAT_QEMU_CRASH_UART_BASE
 	mov_imm x1, PLAT_QEMU_CRASH_UART_CLK_IN_HZ
 	mov_imm x2, PLAT_QEMU_CONSOLE_BAUDRATE
-	b	console_pl011_core_init
+	b	fsp_console_pl011_core_init
 endfunc plat_crash_console_init
 
 	/* ---------------------------------------------
@@ -111,7 +111,7 @@ endfunc plat_crash_console_init
 	 */
 func plat_crash_console_putc
 	mov_imm	x1, PLAT_QEMU_CRASH_UART_BASE
-	b	console_pl011_core_putc
+	b	fsp_console_pl011_core_putc
 endfunc plat_crash_console_putc
 
 	/* ---------------------------------------------
@@ -124,6 +124,6 @@ endfunc plat_crash_console_putc
 	 */
 func plat_crash_console_flush
 	mov_imm	x0, PLAT_QEMU_CRASH_UART_BASE
-	b	console_pl011_core_flush
+	b	fsp_console_pl011_core_flush
 endfunc plat_crash_console_flush
 

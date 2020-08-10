@@ -10,8 +10,7 @@
 //! observing Rust's borrow checker rules.
 //! - Not using correct types (that asm expects) from the Rust side (e.g., primitive types, structs,
 //! arrays, etc.)
-//! - Wrong type casting when passing references and pointers which is related to the above
-//! correct type issue
+//! - Wrong type casting when passing references and pointers from asm to Rust or vice versa
 
 #![no_std]
 #![feature(alloc_error_handler)] // for our own allocator implementation
@@ -20,10 +19,12 @@
 
 #[rustfmt::skip] // the log module defines macros used by fsp_allocator, so it has to come first.
 
-mod log;
+//extern crate rlibc;
+
 mod console;
 mod entrypoints;
 mod fsp_alloc;
+mod log;
 mod qemu_constants;
 
 /// SMC function IDs that FSP uses to signal various forms of completions
@@ -306,7 +307,7 @@ pub extern "C" fn plat_panic_handler_wrapper() -> ! {
 }
 
 extern "C" {
-    fn console_pl011_register(
+    fn fsp_console_pl011_register(
         baseaddr: *const u8,
         clock: u32,
         baud: u32,
@@ -315,7 +316,7 @@ extern "C" {
 
     static __BL32_END__: u32; // This is a linker symbol, so its reference is the correct value.
 
-    fn strncmp(s1: *const u8, s2: *const u8, n: u32) -> u32;
+    //fn strncmp(s1: *const u8, s2: *const u8, n: u32) -> u32;
 
     static fsp_vector_table: FspVectors;
 
@@ -326,8 +327,8 @@ pub fn bl32_end() -> usize {
     unsafe { &__BL32_END__ as *const u32 as usize }
 }
 
-// Rust's libcore calls this function but TF-A's libc doesn't have it.
-#[no_mangle]
-pub extern "C" fn bcmp(s1: *const u8, s2: *const u8, n: u32) -> u32 {
-    unsafe { strncmp(s1, s2, n) }
-}
+//// Rust's libcore calls this function but TF-A's libc doesn't have it.
+//#[no_mangle]
+//pub extern "C" fn bcmp(s1: *const u8, s2: *const u8, n: u32) -> u32 {
+//    unsafe { strncmp(s1, s2, n) }
+//}

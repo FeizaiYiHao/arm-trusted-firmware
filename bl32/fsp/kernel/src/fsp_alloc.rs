@@ -16,6 +16,7 @@
 
 extern crate alloc; // need this due to #![no_std]---for regular Rust, it is by default.
 
+use crate::debug;
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr::null_mut;
 

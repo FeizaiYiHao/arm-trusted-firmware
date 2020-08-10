@@ -2,12 +2,19 @@
 # Modeled after bl32/tsp/tsp.mk
 #
 
-BL32_SOURCES		+=	bl32/fsp/asm/fsp_entrypoint.S		\
-						bl32/fsp/asm/fsp_exceptions.S		\
-						bl32/fsp/asm/fsp_plat_helpers.S
-						#bl32/fsp/asm/pl011_console.S
+BL32_SOURCES		+=	bl32/fsp/boot/fsp_entrypoint.S				\
+						bl32/fsp/boot/fsp_exceptions.S				\
+						bl32/fsp/boot/fsp_plat_helpers.S			\
+						bl32/fsp/console/fsp_pl011_console.S
 
-BL32_LINKERFILE		:=	bl32/fsp/asm/fsp.ld.S
+						#bl32/fsp/xlat_tables/enable_mmu.S			\
+						#bl32/fsp/xlat_tables/xlat_tables_arch.c		\
+						#bl32/fsp/xlat_tables/xlat_tables_context.c	\
+						#bl32/fsp/xlat_tables/xlat_tables_core.c		\
+						#bl32/fsp/xlat_tables/xlat_tables_utils.c
+						#bl32/fsp/console/fsp_multi_console.c
+
+BL32_LINKERFILE		:=	bl32/fsp/boot/fsp.ld.S
 
 SPIN_ON_FSP			:=	0
 
@@ -35,7 +42,7 @@ BL32_LIBS			:=	-lfsp -lc
 
 LIB_FSP				:=	${BUILD_PLAT}/lib/libfsp.a
 
-TARGET				:=	aarch64-unknown-none-softfloat
+TARGET				:=	aarch64-unknown-fsp
 
 .PHONY: ${BL32_LIBS}
 
