@@ -49,6 +49,7 @@ pub fn fsp_main() {
     unsafe{
         slab_test();
     }
+    mem_test();
 
     debug!("fsp main done");
 }
@@ -111,25 +112,46 @@ fn mem_test() {
      //test for speed
     use alloc::vec::Vec;
     use alloc::alloc::{Layout};
-    let mut a: Vec<usize> = Vec::new();
-    for _ii in 1..100{
+    use alloc::alloc::{alloc,dealloc};
+
+    debug!("testing allco speed");
+    let _layout = Layout::from_size_align_unchecked(16, 2);
+    for _i in 1..1000000{
+        let a = alloc(_layout);
+        dealloc(a,_layout);
+    }
+    debug!("testing allco done");
+
+    debug!("testing slab speed");
+    for _ii in 1..10000{
         for _i in 1..100{
-            let ptr =  FSP_SLAB.kmem_alloc(Layout::from_size_align_unchecked(1, 2));
-            *(ptr as *mut usize) = _i + (_ii*100) as usize;
-            a.push(ptr as usize);
-            debug!("Slab alloc addr = ,{}",ptr as usize);
+            let ptr =  FSP_SLAB.kmem_alloc(_layout);
+            FSP_SLAB.kmem_dealloc(ptr,_layout);
         }
-        for _i in 1..100{
+    }
+    debug!("testing slab done");
+
+    debug!("testing slab allocation");
+    let mut a: Vec<usize> = Vec::new();
+    for _ii in 1..10{
+        for _i in 1..2000{
+            let ptr =  FSP_SLAB.kmem_alloc(Layout::from_size_align_unchecked(1, 2));
+            debug!("Slab alloc addr = {}", ptr as usize);
+            *(ptr as *mut usize) = _i + (_ii*1000) as usize;
+            a.push(ptr as usize);
+        }
+        for _i in 1..2000{
             let ptr = a.pop();
             match ptr {
-                Some(a) => {
-                    debug!("Slab dealloc value = {} , addr = {}", *(a as *mut usize) , a);
-                    FSP_SLAB.kmem_dealloc(a as *mut u8,Layout::from_size_align_unchecked(1, 2));
+                Some(ptr) => {
+                    debug!("Slab dealloc value = {} , addr = {}", *(ptr as *mut usize) , ptr);
+                    FSP_SLAB.kmem_dealloc(ptr as *mut u8,Layout::from_size_align_unchecked(1, 2));
                 }
                 _=>{}
             }
         }
     }
+
 }
 
 /// This function is called on panic.
